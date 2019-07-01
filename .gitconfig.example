@@ -1,0 +1,10 @@
+[user]
+	name = Carl Thuringer
+	email = carl@thuringer.us
+	signingkey = F560B3B27AC92461
+[core]
+	autocrlf = input
+[commit]
+	gpgsign = true
+[gpg]
+	program = /usr/local/bin/gpg
