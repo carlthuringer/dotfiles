@@ -14,6 +14,15 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(ORG-capture-templates
+   (quote
+    (("t" "Todo" entry
+      (file+headline "~/ORG/todo.org" "Tasks")
+      "* TODO %?
+ %u")
+     ("n" "Notes" entry
+      (file "~/ORG/notes.org")
+      "* %u %?"))))
  '(custom-enabled-themes (quote (misterioso)))
  '(frame-background-mode (quote dark))
  '(js-indent-level 2)
@@ -48,15 +57,19 @@
  '(org-agenda-skip-deadline-if-done t)
  '(org-agenda-skip-scheduled-if-done t)
  '(org-agenda-start-on-weekday nil)
+ '(org-capture-templates
+   (quote
+    (("t" "Todo" entry
+      (file+headline "~/ORG/todo.org" "Tasks")
+      "* TODO %?
+ %u")
+     ("n" "Notes" entry
+      (file "~/ORG/notes.org")
+      "* %u %?"))))
  '(org-deadline-warning-days 14)
  '(org-default-notes-file "~/ORG/notes.org")
  '(org-directory "~/ORG")
  '(org-fast-tag-selection-single-key (quote expert))
- '(ORG-capture-templates
-   '(("t" "Todo" entry (file+headline "~/ORG/todo.org" "Tasks")
-      "* TODO %?\n %u")
-     ("n" "Notes" entry (file "~/ORG/notes.org")
-      "* %u %?")))
  '(org-reverse-note-order t)
  '(package-archives
    (quote
@@ -64,7 +77,7 @@
      ("melpa" . "https://stable.melpa.org/packages/"))))
  '(package-selected-packages
    (quote
-    (markdown-mode magit terraform-mode exec-path-from-shell)))
+    (projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
  '(plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar")
  '(remember-annotation-functions (quote (org-remember-annotation)))
  '(remember-handler-functions (quote (org-remember-handler))))
@@ -88,15 +101,16 @@
 (global-set-key "\C-cl" 'org-store-link)
 (global-set-key "\C-ca" 'org-agenda)
 (global-set-key "\C-cc" 'org-capture)
+(global-set-key "\C-cb" 'org-switchb)
 (eval-after-load "org"
   '(progn
      (define-prefix-command 'org-todo-state-map)
      (define-key org-mode-map "\C-cx" 'org-todo-state-map)
-
      (define-key org-todo-state-map "x" #'(lambda nil (interactive) (org-todo "CANCELLED")))
      (define-key org-todo-state-map "d" #'(lambda nil (interactive) (org-todo "DONE")))
      (define-key org-todo-state-map "f" #'(lambda nil (interactive) (org-todo "DEFERRED")))
      (define-key org-todo-state-map "l" #'(lambda nil (interactive) (org-todo "DELEGATED")))
      (define-key org-todo-state-map "s" #'(lambda nil (interactive) (org-todo "STARTED")))
      (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
+     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
      ))
