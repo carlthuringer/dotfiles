@@ -14,6 +14,15 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(ORG-capture-templates
+   (quote
+    (("t" "Todo" entry
+      (file+headline "~/ORG/todo.org" "Tasks")
+      "* TODO %?
+ %u")
+     ("n" "Notes" entry
+      (file "~/ORG/notes.org")
+      "* %u %?"))))
  '(custom-enabled-themes (quote (misterioso)))
  '(frame-background-mode (quote dark))
  '(js-indent-level 2)
@@ -32,7 +41,7 @@
 	   "\\=.*\\[#A\\]")))
        (org-agenda-ndays 1)
        (org-agenda-overriding-header "Today's Priority #A tasks: ")))
-     ("u" alltodo "UNSCHEDULED"
+     ("u" alltodo ""
       ((org-agenda-skip-function
 	(lambda nil
 	  (org-agenda-skip-entry-if
@@ -68,7 +77,7 @@
      ("melpa" . "https://stable.melpa.org/packages/"))))
  '(package-selected-packages
    (quote
-    (projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
+    (rspec-mode projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
  '(plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar")
  '(remember-annotation-functions (quote (org-remember-annotation)))
  '(remember-handler-functions (quote (org-remember-handler))))
