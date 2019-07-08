@@ -26,6 +26,7 @@
  '(custom-enabled-themes (quote (misterioso)))
  '(frame-background-mode (quote dark))
  '(js-indent-level 2)
+ '(line-number-mode nil)
  '(org-agenda-custom-commands
    (quote
     (("d" todo "DELEGATED" nil)
@@ -77,7 +78,7 @@
      ("melpa" . "https://stable.melpa.org/packages/"))))
  '(package-selected-packages
    (quote
-    (rspec-mode projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
+    (org rspec-mode projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
  '(plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar")
  '(remember-annotation-functions (quote (org-remember-annotation)))
  '(remember-handler-functions (quote (org-remember-handler))))
@@ -114,6 +115,12 @@
      (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
      (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
      ))
+(require 'ob-sh)
+;;(org-babel-do-load-languages
+;; 'org-babel-load-languages
+;; '((sh . t)))
+
+
 
 ;; Projectile
 (projectile-mode +1)
