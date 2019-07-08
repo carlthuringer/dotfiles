@@ -14,15 +14,6 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ORG-capture-templates
-   (quote
-    (("t" "Todo" entry
-      (file+headline "~/ORG/todo.org" "Tasks")
-      "* TODO %?
- %u")
-     ("n" "Notes" entry
-      (file "~/ORG/notes.org")
-      "* %u %?"))))
  '(custom-enabled-themes (quote (misterioso)))
  '(frame-background-mode (quote dark))
  '(js-indent-level 2)
@@ -41,7 +32,7 @@
 	   "\\=.*\\[#A\\]")))
        (org-agenda-ndays 1)
        (org-agenda-overriding-header "Today's Priority #A tasks: ")))
-     ("u" alltodo ""
+     ("u" alltodo "UNSCHEDULED"
       ((org-agenda-skip-function
 	(lambda nil
 	  (org-agenda-skip-entry-if
