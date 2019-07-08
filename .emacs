@@ -114,3 +114,7 @@
      (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
      (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
      ))
+
+;; Projectile
+(projectile-mode +1)
+(define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
