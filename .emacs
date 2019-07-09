@@ -114,13 +114,9 @@
      (define-key org-todo-state-map "s" #'(lambda nil (interactive) (org-todo "STARTED")))
      (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
      (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-     ))
-(require 'ob-sh)
-;;(org-babel-do-load-languages
-;; 'org-babel-load-languages
-;; '((sh . t)))
-
-
+     (org-babel-do-load-languages
+      'org-babel-load-languages
+      '((shell . t)))))
 
 ;; Projectile
 (projectile-mode +1)
