@@ -1,0 +1,1353 @@
+#+TITLE: Emacs Configuration File
+#+AUTHOR: Carl Thuringer
+#+DESCRIPTION: A literate programming version of the Emacs Initialization Script, bootstrapped by the .emacs file.
+#+PROPERTY:    header-args:elisp  :tangle ~/.emacs.d/elisp/init-main.el
+#+PROPERTY:    header-args:shell  :tangle no
+#+PROPERTY:    header-args        :results silent :eval no-export :comments org
+#+OPTIONS:     num:nil toc:nil todo:nil tasks:nil tags:nil
+#+OPTIONS:     skip:nil author:nil email:nil creator:nil timestamp:nil
+#+INFOJS_OPT:  view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+
+* Introduction
+
+  This is my =.emacs= file, written in [[http://www.orgmode.org][literate style]] and ripped off
+  from [[https://github.com/howardabrams/dot-files/blob/master/emacs.org][Howard Abrams]]. It was such a good idea that I figured I would
+  do the same thing. Unless otherwise specified much of this file is
+  cribbed from his Emacs config, and it would be tedious to attribute
+  every swiped section. He's licensed it with (CC BY 3.0) so all I
+  have to do is give him credit for the original.
+
+** Emacs Executable
+
+   Typically I just install Emacs from Homebrew Cask. This is fine for
+   the Mac and possibly also fine for other platforms, should I ever
+   get myself onto a linux full-time.
+
+   #+begin_src shell
+     brew cask install emacs
+   #+end_src
+
+** Loading this file.
+
+   To "load" the contents of this file, add the following to =$HOME/.emacs=:
+
+   #+begin_src elisp :tangle no
+     ;; Load our Literate Programming version of our Dot Emacs file from
+     ;; our dotfiles repo.
+     (load-file "~/.emacs.d/elisp/init-main.el")
+     (server-start)
+   #+end_src
+
+* General Settings
+
+** My directory location
+
+   Handy things that let us refer to subdirectories.
+
+   #+begin_src elisp
+     (defconst ha/emacs-directory (concat (getenv "HOME") "/.emacs.d/"))
+
+     (defun ha/emacs-subdirectory (d) (expand-file-name d ha/emacs-directory))
+   #+end_src
+
+** Directory Structure
+
+   Make sure the following directories are created
+
+   #+BEGIN_SRC elisp
+     (let* ((subdirs '("elisp" "backups"))
+            (fulldirs (mapcar (lambda (d) (ha/emacs-subdirectory d)) subdirs)))
+       (dolist (dir fulldirs)
+         (when (not (file-exists-p dir))
+           (message "Make directory: %s" dir)
+           (make-directory dir))))
+   #+END_SRC
+
+** Customization Section
+
+   This tells emacs the customization menu customizations live in this
+   =custom.el= file.
+
+   #+BEGIN_SRC elisp
+     (setq custom-file (expand-file-name "custom.el" ha/emacs-directory))
+     (when (file-exists-p custom-file)
+       (load custom-file))
+   #+END_SRC
+
+** Modernizing Emacs
+
+   With a long history of working on small machines without gigabytes
+   of RAM, we might as well let Emacs be the beast it has always
+   dreamed.
+
+   First, let’s increase the cache before starting garbage collection:
+   #+BEGIN_SRC elisp
+     (setq gc-cons-threshold 50000000)
+   #+END_SRC
+
+   Found [[https://github.com/wasamasa/dotemacs/blob/master/init.org#init][here]] how to remove the warnings from the GnuTLS library when
+   using HTTPS... increase the minimum prime bits size:
+   #+BEGIN_SRC elisp
+     (setq gnutls-min-prime-bits 4096)
+   #+END_SRC
+
+* Package Initialization
+** Package manager
+
+   Emacs has a package manager and package repositories. Activate all
+   of them.
+
+   #+BEGIN_SRC elisp
+     (require 'package)
+
+     (setq package-archives '(("org"       . "http://orgmode.org/elpa/")
+                              ("gnu"       . "http://elpa.gnu.org/packages/")
+                              ("melpa"     . "http://melpa.org/packages/")
+                              ("marmalade" . "http://marmalade-repo.org/packages/")))
+
+     (package-initialize)
+     (package-refresh-contents)
+   #+END_SRC
+
+** Use-Package
+
+   Using [[https://github.com/jwiegley/use-package][use-package]] to automatically install certain packages, as
+   well as the ease of lazily loading them.
+
+   #+BEGIN_SRC elisp
+     (unless (package-installed-p 'use-package)
+       (package-refresh-contents)
+       (package-install 'use-package))
+
+     (require 'use-package)
+   #+END_SRC
+
+** Init File Support
+
+   Load up a collection of enhancements to Emacs Lisp, including [[https://github.com/magnars/dash.el][dash]],
+   [[https://github.com/magnars/s.el][s]] for string manipulation, and [[https://github.com/rejeep/f.el][f]] for file manipulation.
+
+   #+BEGIN_SRC elisp
+     (require 'cl)
+
+     (use-package dash
+       :ensure t
+       :config (eval-after-load "dash" '(dash-enable-font-lock)))
+
+     (use-package s
+       :ensure t)
+
+     (use-package f
+       :ensure t)
+    #+END_SRC
+
+
+* Variables
+** Tabs vs Spaces
+
+   I have learned to distrust tabs in my source code, so let's make
+   sure that we only have spaces. See [[http://ergoemacs.org/emacs/emacs_tabs_space_indentation_setup.html][this discussion]] for details.
+
+   #+BEGIN_SRC elisp
+     (setq-default indent-tabs-mode nil)
+     (setq tab-width 2)
+   #+END_SRC
+
+   Make tab key do indent first then completion.
+
+   #+BEGIN_SRC elisp
+     (setq-default tab-always-indent 'complete)
+   #+END_SRC
+
+* Display Settings
+
+
+  #+BEGIN_SRC elisp
+    (setq initial-scratch-message "") ;; No scratch message
+    (setq visible-bell t)             ;; Get rid of the beeps
+
+    (when (window-system)
+      (tool-bar-mode 0)               ;; No Toolbars
+      (when (fboundp 'horizontal-scroll-bar-mode)
+        (horizontal-scroll-bar-mode -1))
+      (scroll-bar-mode -1))            ;; No Scrollbars
+  #+END_SRC
+
+  Colored highlighting of selected text needs to be both
+  bright, but not obscure the white text in the foreground (see
+  =list-colors-display=).
+
+  #+BEGIN_SRC elisp
+    (set-face-background 'region "MediumPurple1")
+  #+END_SRC
+
+** Whitespace Mode
+
+   You don't want this on all the time, but nice to turn it on every
+   now and then:
+
+   #+BEGIN_SRC elisp
+     (use-package whitespace
+       :bind ("C-c T w" . whitespace-mode)
+       :init
+       (setq whitespace-line-column nil
+             whitespace-display-mappings '((space-mark 32 [183] [46])
+                                           (newline-mark 10 [9166 10])
+                                           (tab-mark 9 [9654 9] [92 9])))
+       :config
+       (set-face-attribute 'whitespace-space       nil :foreground "#666666" :background nil)
+       (set-face-attribute 'whitespace-newline     nil :foreground "#666666" :background nil)
+       (set-face-attribute 'whitespace-indentation nil :foreground "#666666" :background nil)
+       :diminish whitespace-mode)
+   #+END_SRC
+
+** Fill Mode
+
+   Automatically wrapping when you get to the end of a line (or the
+   fill-region):
+
+   #+BEGIN_SRC elisp
+     (use-package fill
+       :bind (("C-c T f" . auto-fill-mode)
+              ("C-c T t" . toggle-truncate-lines))
+       :init (add-hook 'org-mode-hook 'turn-on-auto-fill)
+       :diminish auto-fill-mode)
+   #+END_SRC
+
+* Key Bindings
+** Displaying Command Sequences
+
+   Many command sequences may be logical, but who can remember them
+   all? While I used to use [[https://github.com/kai2nenobu/guide-key][guide-key]] to display the final function
+   name, it isn't as nice as [[https://github.com/justbur/emacs-which-key][which-key]].
+
+   #+BEGIN_SRC elisp
+     (use-package which-key
+       :ensure t
+       :defer 10
+       :diminish which-key-mode
+       :config
+
+       ;; Replacements for how KEY is replaced when which-key displays
+       ;;   KEY → FUNCTION
+       ;; Eg: After "C-c", display "right → winner-redo" as "▶ → winner-redo"
+       (setq which-key-key-replacement-alist
+             '(("<\\([[:alnum:]-]+\\)>" . "\\1")
+               ("left"                  . "◀")
+               ("right"                 . "▶")
+               ("up"                    . "▲")
+               ("down"                  . "▼")
+               ("delete"                . "DEL") ; delete key
+               ("\\`DEL\\'"             . "BS") ; backspace key
+               ("next"                  . "PgDn")
+               ("prior"                 . "PgUp"))
+
+             ;; List of "special" keys for which a KEY is displayed as just
+             ;; K but with "inverted video" face... not sure I like this.
+             which-key-special-keys '("RET" "DEL" ; delete key
+                                      "ESC" "BS" ; backspace key
+                                      "SPC" "TAB")
+
+             ;; Replacements for how part or whole of FUNCTION is replaced:
+             which-key-description-replacement-alist
+             '(("Prefix Command" . "prefix")
+               ("\\`calc-"       . "") ; Hide "calc-" prefixes when listing M-x calc keys
+               ("\\`projectile-" . "𝓟/")
+               ("\\`org-babel-"  . "ob/"))
+
+             ;; Underlines commands to emphasize some functions:
+             which-key-highlighted-command-list
+             '("\\(rectangle-\\)\\|\\(-rectangle\\)"
+               "\\`org-"))
+
+       ;; Change what string to display for a given *complete* key binding
+       ;; Eg: After "C-x", display "8 → +unicode" instead of "8 → +prefix"
+       (which-key-add-key-based-replacements
+         "C-x 8"   "unicode"
+         "C-c T"   "toggles-"
+         "C-c p s" "projectile-search"
+         "C-c p 4" "projectile-other-buffer-"
+         "C-x a"   "abbrev/expand"
+         "C-x r"   "rect/reg"
+         "C-c /"   "engine-mode-map"
+         "C-c C-v" "org-babel")
+
+       (which-key-mode 1))
+   #+END_SRC
+
+** Undo and Redo
+
+   According to [[http://ergoemacs.org/emacs/emacs_best_redo_mode.html][this article]], I get better functionality than
+   the =redo+= plugin (which I can't seem to get working well).
+
+   #+BEGIN_SRC elisp
+     (use-package undo-tree
+       :ensure t
+       :diminish undo-tree-mode
+       :init
+       (global-undo-tree-mode 1)
+       :config
+       (defalias 'redo 'undo-tree-redo)
+       :bind (("C-z" . undo)     ; Zap to character isn't helpful
+              ("C-S-z" . redo)))
+   #+END_SRC
+
+** Jumping to Windows
+
+  Set up [[https://github.com/abo-abo/ace-window][ace-window]] mode:
+
+  #+BEGIN_SRC elisp
+    (use-package ace-window
+      :ensure t
+      :init
+        (setq aw-keys '(?a ?s ?d ?f ?j ?k ?l ?o))
+        (global-set-key (kbd "C-x o") 'ace-window)
+      :diminish ace-window-mode)
+  #+END_SRC
+
+** Selecting a Buffer
+
+   I like [[https://github.com/KMahoney/kpm-list][kpm-list]] a bit better than =ibuffer=, but I really don’t use
+   either more than =ido-switch-buffer=. Still:
+
+   #+BEGIN_SRC elisp
+    (use-package kpm-list
+      :ensure t
+      :bind ("S-<f8>" . kpm-list)
+            ("C-x C-b" . kpm-list))
+   #+END_SRC
+** Unfill Paragraph
+
+   Unfilling a paragraph joins all the lines in a paragraph into a
+   single line. Taken from [[http://www.emacswiki.org/UnfillParagraph][here]].
+
+   #+BEGIN_SRC elisp
+     (defun unfill-paragraph ()
+       "Convert a multi-line paragraph into a single line of text."
+       (interactive)
+       (let ((fill-column (point-max)))
+         (fill-paragraph nil)))
+
+     ;; Handy key definition
+     (define-key global-map "\M-Q" 'unfill-paragraph)
+   #+END_SRC
+** Expand Region
+
+   Wherever you are in a file, and whatever the type of file, you can
+   slowly increase a region selection by logical segments by using
+   Magnar's [[https://github.com/magnars/expand-region.el][expand-region]] project.
+
+   However, the normal experience for =expand-region= is interactive,
+   expected to be called repeatedly to expand and contract the regions
+   based on syntax, and whatnot. Since I am seldom sure what I will
+   select if I give this function a numeric prefix, I created a
+   wrapper function that will (when given a number), just select the
+   number of lines for the region. Select the current line with a 0
+   argument. No argument (well, =lines= is given 1 with no argument),
+   then it just calls =expand-region=:
+
+   #+BEGIN_SRC elisp
+     (use-package expand-region
+       :ensure t
+       :config
+       (defun ha/expand-region (lines)
+         "Prefix-oriented wrapper around Magnar's `er/expand-region'.
+
+     Call with LINES equal to 1 (given no prefix), it expands the
+     region as normal.  When LINES given a positive number, selects
+     the current line and number of lines specified.  When LINES is a
+     negative number, selects the current line and the previous lines
+     specified.  Select the current line if the LINES prefix is zero."
+         (interactive "p")
+         (cond ((= lines 1)   (er/expand-region 1))
+               ((< lines 0)   (ha/expand-previous-line-as-region lines))
+               (t             (ha/expand-next-line-as-region (1+ lines)))))
+
+       (defun ha/expand-next-line-as-region (lines)
+         (message "lines = %d" lines)
+         (beginning-of-line)
+         (set-mark (point))
+         (end-of-line lines))
+
+       (defun ha/expand-previous-line-as-region (lines)
+         (end-of-line)
+         (set-mark (point))
+         (beginning-of-line (1+ lines)))
+
+       :bind ("C-=" . ha/expand-region))
+   #+END_SRC
+
+** Block Wrappers
+
+   While the =M-(= binding to =insert-pair= is great, I often need to
+   wrap with other characters:
+
+   #+BEGIN_SRC elisp
+     (global-set-key (kbd "M-[") 'insert-pair)
+     (global-set-key (kbd "M-{") 'insert-pair)
+     (global-set-key (kbd "M-<") 'insert-pair)
+     (global-set-key (kbd "M-'") 'insert-pair)
+     (global-set-key (kbd "M-`") 'insert-pair)
+     (global-set-key (kbd "M-\"") 'insert-pair)
+   #+END_SRC
+
+   But [[https://github.com/rejeep/wrap-region.el][wrap-region]] is even more flexible. In most editors, selecting
+   text and typing anything replaces the selected text (see the
+   [[info:emacs#Using%20Region][delete-selection-mode]]), but in this case, we can do something
+   different... like wrapping:
+
+   #+BEGIN_SRC elisp
+     (use-package wrap-region
+       :ensure   t
+       :config
+       (wrap-region-global-mode t)
+       (wrap-region-add-wrappers
+        '(("(" ")")
+          ("[" "]")
+          ("{" "}")
+          ("<" ">")
+          ("'" "'")
+          ("\"" "\"")
+          ("‘" "’"   "q")
+          ("“" "”"   "Q")
+          ("*" "*"   "b"   org-mode)                 ; bolden
+          ("*" "*"   "*"   org-mode)                 ; bolden
+          ("/" "/"   "i"   org-mode)                 ; italics
+          ("/" "/"   "/"   org-mode)                 ; italics
+          ("~" "~"   "c"   org-mode)                 ; code
+          ("~" "~"   "~"   org-mode)                 ; code
+          ("=" "="   "v"   org-mode)                 ; verbatim
+          ("=" "="   "="   org-mode)                 ; verbatim
+          ("_" "_"   "u" '(org-mode markdown-mode))  ; underline
+          ("**" "**" "b"   markdown-mode)            ; bolden
+          ("*" "*"   "i"   markdown-mode)            ; italics
+          ("`" "`"   "c" '(markdown-mode ruby-mode)) ; code
+          ("`" "'"   "c"   lisp-mode)                ; code
+          ))
+       :diminish wrap-region-mode)
+   #+END_SRC
+
+   But in order to wrap text in a more general way (with just about
+   any textual string), we need something more. Especially with the
+   =expand-region= command, wrapping a logical block of text with a
+   beginning and ending string really makes sense.
+
+   #+BEGIN_SRC elisp
+     (defun surround (start end txt)
+       "Wrap region with textual markers.
+
+      Without active region (START and END), use the current 'symbol /
+     word' at point instead of TXT.
+
+     Useful for wrapping parens and angle-brackets to also
+     insert the matching closing symbol.
+
+     This function also supports some `org-mode' wrappers:
+
+       - `#s` wraps the region in a source code block
+       - `#e` wraps it in an example block
+       - `#q` wraps it in an quote block"
+       (interactive "r\nsEnter text to surround: " start end txt)
+
+       ;; If the region is not active, we use the 'thing-at-point' function
+       ;; to get a "symbol" (often a variable or a single word in text),
+       ;; and use that as our region.
+
+       (if (not (region-active-p))
+           (let ((new-region (bounds-of-thing-at-point 'symbol)))
+             (setq start (car new-region))
+             (setq end (cdr new-region))))
+
+       ;; We create a table of "odd balls" where the front and the end are
+       ;; not the same string.
+       (let* ((s-table '(("#e" . ("#+BEGIN_EXAMPLE\n" "\n#+END_EXAMPLE") )
+                         ("#s" . ("#+BEGIN_SRC \n"    "\n#+END_SRC") )
+                         ("#q" . ("#+BEGIN_QUOTE\n"   "\n#+END_QUOTE"))
+                         ("<"  . ("<" ">"))
+                         ("("  . ("(" ")"))
+                         ("{"  . ("{" "}"))
+                         ("["  . ("[" "]"))))    ; Why yes, we'll add more
+              (s-pair (assoc-default txt s-table)))
+
+         ;; If txt doesn't match a table entry, then the pair will just be
+         ;; the text for both the front and the back...
+         (unless s-pair
+           (setq s-pair (list txt txt)))
+
+         (save-excursion
+           (narrow-to-region start end)
+           (goto-char (point-min))
+           (insert (car s-pair))
+           (goto-char (point-max))
+           (insert (cadr s-pair))
+           (widen))))
+
+     (global-set-key (kbd "C-+") 'surround)
+   #+END_SRC
+
+   This function returns an interactive lambda expression, suitable
+   for adding to a key-binding:
+
+   #+BEGIN_SRC elisp
+     (defun surround-text-with (surr-str)
+       "Return an interactive function that when called, surrounds region (or word) with string, SURR-STR."
+       (lexical-let ((text surr-str))
+           (lambda ()
+             (interactive)
+             (if (region-active-p)
+                 (surround (region-beginning) (region-end) text)
+               (surround nil nil text)))))
+   #+END_SRC
+
+** Projectile
+#+BEGIN_SRC elisp
+     (use-package projectile
+       :ensure t
+       :diminish projectile-mode
+       :init (projectile-global-mode 1)
+       :commands projectile-ag
+       :config
+       (setq projectile-switch-project-action 'projectile-commander
+             projectile-completion-system 'ido
+             projectile-create-missing-test-files t
+             projectile-keymap-prefix (kbd "C-x p"))
+       (add-to-list 'projectile-globally-ignored-files ".DS_Store")
+
+       (def-projectile-commander-method ?d
+         "Open project root in dired."
+         (projectile-dired))
+
+       (def-projectile-commander-method ?s
+         "Open a *shell* buffer for the project."
+         (projectile-run-shell))
+
+       (def-projectile-commander-method ?X
+         "Open a Direx buffer on the side."
+         (call-interactively #'ha/projectile-direx))
+
+       (def-projectile-commander-method ?F
+         "Git fetch."
+         (magit-status)
+         (call-interactively #'magit-fetch-current))
+
+       (def-projectile-commander-method ?j
+         "Jack-in with Cider."
+         (let* ((opts (projectile-current-project-files))
+                (file (ido-completing-read
+                       "Find file: "
+                       opts
+                       nil nil nil nil
+                       (car (cl-member-if
+                             (lambda (f)
+                               (string-match "core\\.clj\\'" f))
+                             opts)))))
+           (find-file (expand-file-name
+                       file (projectile-project-root)))
+           (run-hooks 'projectile-find-file-hook)
+           (cider-jack-in))))
+   #+END_SRC
+
+  Much of the previous section came from [[http://endlessparentheses.com/improving-projectile-with-extra-commands.html][this essay]].
+
+** Controlling Window Placement
+
+   Change window configuration and then return to the old
+   configuration with [[http://www.emacswiki.org/emacs/WinnerMode][winner-mode]].  Use =Control-C Arrow= keys to
+   cycle through window/frame configurations.
+
+   #+BEGIN_SRC elisp
+     (use-package winner
+       :ensure t
+       :init (winner-mode 1))
+   #+END_SRC
+
+   But I would like to jump between different layout configurations
+   based on purpose or project. I started with Eyebrowse, but I'm
+   currently experimenting with other options.
+
+** Dired Options
+
+   Between =M-!= and starting [[Eshell][Eshell]], comes =dired= (=C-x d=).
+
+   #+BEGIN_SRC elisp
+     (setq ls-lisp-use-insert-directory-program nil)
+   #+END_SRC
+
+   This enhancement to dired hides the ugly details until you hit
+   '(' and shows the details with ')'. I also change the [...] to a
+   simple asterisk.
+
+   #+BEGIN_SRC elisp
+     (use-package dired-details
+       :ensure t
+       :init   (setq dired-details-hidden-string "* ")
+       :config (dired-details-install))
+   #+END_SRC
+
+   The ability to create a dired buffer based on searching for files
+   in a directory tree with =find-name-dired= is fantastic. The
+   [[http://www.masteringemacs.org/articles/2011/03/25/working-multiple-files-dired/][following magic]] optimizes this approach:
+
+   #+BEGIN_SRC elisp
+     (use-package find-dired
+        :ensure t
+        :init (setq find-ls-option '("-print0 | xargs -0 ls -od" . "-od")))
+   #+END_SRC
+
+   The [[http://pragmaticemacs.com/emacs/quickly-preview-images-and-other-files-with-peep-dired/][peep project]] allows you to preview files before loading them
+   into a dedicated buffer:
+
+   #+BEGIN_SRC elisp
+     (use-package peep-dired
+       :defer t ; don't access `dired-mode-map' until `peep-dired' is loaded
+       :bind (:map dired-mode-map
+                   ("P" . peep-dired)))
+   #+END_SRC
+
+   The [[http://www.masteringemacs.org/articles/2014/04/10/dired-shell-commands-find-xargs-replacement/][dired-x project]] seems useful:
+
+   #+BEGIN_SRC elisp
+     (use-package dired-x)
+   #+END_SRC
+
+** IDO (Interactively DO Things)
+
+   According to [[http://www.masteringemacs.org/articles/2010/10/10/introduction-to-ido-mode/][Mickey]], IDO is the greatest thing.
+
+   #+BEGIN_SRC elisp
+     (use-package ido
+       :ensure t
+       :init  (setq ido-enable-flex-matching t
+                    ido-ignore-extensions t
+                    ido-use-virtual-buffers t
+                    ido-everywhere t)
+       :config
+       (ido-mode 1)
+       (ido-everywhere 1)
+       (add-to-list 'completion-ignored-extensions ".pyc"))
+   #+END_SRC
+
+   Add to IDO, the [[https://github.com/lewang/flx][FLX]] package:
+
+   #+BEGIN_SRC elisp
+     (use-package flx-ido
+        :ensure t
+        :init (setq ido-enable-flex-matching t
+                    ido-use-faces nil)
+        :config (flx-ido-mode 1))
+   #+END_SRC
+
+   According to [[https://gist.github.com/rkneufeld/5126926][Ryan Neufeld]], we could make IDO work vertically,
+   which is much easier to read. For this, I use [[https://github.com/gempesaw/ido-vertical-mode.el][ido-vertically]]:
+
+   #+BEGIN_SRC elisp
+     (use-package ido-vertical-mode
+       :ensure t
+       :init               ; I like up and down arrow keys:
+       (setq ido-vertical-define-keys 'C-n-C-p-up-and-down)
+       :config
+       (ido-vertical-mode 1))
+   #+END_SRC
+
+*** IDO File Listing by Modified Time
+
+    This sorts an IDO filelist by /mtime/ instead of alphabetically.
+
+    #+BEGIN_SRC elisp
+      (defun ido-sort-mtime ()
+        "Reorder the IDO file list to sort from most recently modified."
+        (setq ido-temp-list
+              (sort ido-temp-list
+                    (lambda (a b)
+                      (ignore-errors
+                        (time-less-p
+                         (sixth (file-attributes (concat ido-current-directory b)))
+                         (sixth (file-attributes (concat ido-current-directory a))))))))
+        (ido-to-end  ;; move . files to end (again)
+         (delq nil (mapcar
+                    (lambda (x) (and (char-equal (string-to-char x) ?.) x))
+                    ido-temp-list))))
+
+      (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
+      (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
+    #+END_SRC
+
+** Backup Settings
+
+   This setting moves all backup files to a central location.
+   Got it from [[http://whattheemacsd.com/init.el-02.html][this page]].
+
+   #+BEGIN_SRC elisp
+     (setq backup-directory-alist
+           `(("." . ,(expand-file-name
+                      (ha/emacs-subdirectory "backups")))))
+   #+END_SRC
+
+   Tramp should do the same:
+   #+BEGIN_SRC elisp
+     (setq tramp-backup-directory-alist backup-directory-alist)
+   #+END_SRC
+
+   Make backups of files, even when they're in version control:
+   #+BEGIN_SRC elisp
+     (setq vc-make-backup-files t)
+   #+END_SRC
+
+   And let’s make sure our files are saved if we wander off and
+   defocus the Emacs application:
+
+   #+BEGIN_SRC elisp
+     (defun save-all ()
+       "Save all dirty buffers without asking for confirmation."
+       (interactive)
+       (save-some-buffers t))
+
+     (add-hook 'focus-out-hook 'save-all)
+   #+END_SRC
+
+* Miscellaneous Settings
+
+** Line Numbers
+
+   Turn =linum-mode= on/off with =Command-K= (see the [[*Macintosh][Macintosh]]
+   section above).  However, I turn this on automatically for
+   programming modes.
+
+   #+BEGIN_SRC elisp
+     (use-package linum
+       :init
+       (add-hook 'prog-mode-hook 'linum-mode)
+       (add-hook 'linum-mode-hook (lambda () (set-face-attribute 'linum nil :height 110)))
+
+       :config
+       (defun linum-fringe-toggle ()
+         "Toggles the line numbers as well as the fringe."    (interactive)
+         (cond (linum-mode (fringe-mode '(0 . 0))
+                           (linum-mode -1))
+               (t          (fringe-mode '(8 . 0))
+                           (linum-mode 1))))
+
+       :bind (("A-C-k"   . linum-mode)
+              ("s-C-k"   . linum-mode)
+              ("A-C-M-k" . linum-fringe-toggle)
+              ("s-C-M-k" . linum-fringe-toggle)))
+   #+END_SRC
+
+   *Note:* make the line numbers a fixed size, then increasing or
+   decreasing the font size doesn't truncate the numbers.
+
+   The [[https://github.com/coldnew/linum-relative][linum-relative]] mode allows one to see the /destination/ line as a
+   relative distance (like one 9 lines lower), and then =C-9 C-n= can
+   quickly pop to it.
+
+   #+BEGIN_SRC elisp
+     (use-package linum-relative
+       :ensure t
+       :config
+       (defun linum-new-mode ()
+         "If line numbers aren't displayed, then display them.
+          Otherwise, toggle between absolute and relative numbers."
+         (interactive)
+         (if linum-mode
+             (linum-relative-toggle)
+           (linum-mode 1)))
+
+       :bind ("A-k" . linum-new-mode)
+             ("s-k" . linum-new-mode))   ;; For Linux
+   #+END_SRC
+
+** Strip Whitespace on Save
+
+   When I save, I want to always, and I do mean always strip all
+   trailing whitespace from the file.
+
+   #+BEGIN_SRC elisp
+     (add-hook 'before-save-hook 'delete-trailing-whitespace)
+   #+END_SRC
+
+** Save File Position
+
+   Save the point position for every file, and restore it when that
+   file is reloaded.
+
+   #+BEGIN_SRC elisp
+     (use-package saveplace
+        :init
+        (setq-default save-place t)
+        (setq save-place-forget-unreadable-files t
+              save-place-skip-check-regexp "\\`/\\(?:cdrom\\|floppy\\|mnt\\|/[0-9]\\|\\(?:[^@/:]*@\\)?[^@/:]*[^@/:.]:\\)"))
+   #+END_SRC
+** Flycheck
+
+   [[https://github.com/flycheck/flycheck][Flycheck]] seems to be quite superior to good ol' Flymake.
+
+   #+BEGIN_SRC elisp
+     (use-package flycheck
+       :ensure t
+       :init
+       (add-hook 'after-init-hook 'global-flycheck-mode)
+       :config
+       (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc)))
+   #+END_SRC
+
+* Programming Languages
+** General Language Support
+
+   Many programming language environments can benefit from this section.
+
+*** ElDoc
+
+    I like ElDoc support (when I can get it), but not needed in the
+    mode line:
+
+    #+BEGIN_SRC elisp
+      (use-package eldoc
+        :diminish eldoc-mode
+        :init  (setq eldoc-idle-delay 0.1))
+    #+END_SRC
+
+*** Tag Support
+
+   All programming languages require some sort of tagging. but after
+   thirty years, we are still using good ol’ ctags...well,
+   [[http://ctags.sourceforge.net][Exuberant Ctags]].   Install with Homebrew:
+
+   #+BEGIN_SRC shell
+     brew install --HEAD ctags
+   #+END_SRC
+
+   On Ubuntu Linux, do:
+
+   #+BEGIN_SRC shell
+     sudo apt-get install -y exuberant-ctags
+   #+END_SRC
+
+   Note: for every project, run the following command:
+
+   #+BEGIN_SRC shell
+     ctags -e -R .
+   #+END_SRC
+
+   I want to be able to add headers from my =org-mode= files as
+   a /language option/:
+
+   #+BEGIN_SRC shell :tangle ~/.ctags :comments no
+     --langdef=org
+     --langmap=org:.org
+     --regex-org=/^\*+[ \t]+([a-zA-Z0-9_ ]+)/\1/d,definition/
+
+     --exclude=vendor
+     --exclude=.git
+   #+END_SRC
+
+   Also, add various directories and filenames that should be ignored.
+   We access stuff by loading the =etags= package:
+
+   #+BEGIN_SRC elisp
+     (use-package etags
+        :init (setq tags-revert-without-query 1))
+   #+END_SRC
+
+   Now, use the following keys:
+
+   - M-. :: To find the tag at point to jump to the function’s
+            definition when the point is over a function call. It is a
+            dwim-type function.
+   - M-, :: jump back to where you were.
+   - M-? :: find a tag, that is, use the Tags file to look up a
+            definition. If there are multiple tags in the project with
+            the same name, use `C-u M-.’ to go to the next match.
+   - =M-x tags-search= :: regexp-search through the source files
+        indexed by a tags file (a bit like =grep=)
+   - =M-x tags-query-replace= :: query-replace through the source files
+        indexed by a tags file
+   - =M-x tags-apropos= :: list all tags in a tags file that match a
+        regexp
+   - =M-x list-tags= :: list all tags defined in a source file
+
+   With the fancy new [[https://marmalade-repo.org/packages/ctags-update][ctags-update]] package, we can update the tags file
+   whenever we save a file:
+
+   #+BEGIN_SRC elisp
+     (use-package ctags-update
+       :ensure t
+       :config
+       (add-hook 'prog-mode-hook  'turn-on-ctags-auto-update-mode)
+       :diminish ctags-auto-update-mode)
+   #+END_SRC
+
+   While, I like =imenu=, [[https://github.com/vspinu/imenu-anywhere][combining it]] with an IDO interface nicely
+   lists the headings/functions in the current buffer:
+
+   #+BEGIN_SRC elisp
+     (use-package idomenu
+       :ensure t
+       :bind ("C-c i" . idomenu))
+   #+END_SRC
+
+   If I don't know what I'm after, Helm is better:
+
+   #+BEGIN_SRC elisp :tangle no
+     (use-package helm
+       :bind (("C-c M-i" . helm-imenu)))
+   #+END_SRC
+
+   However, I need to use [[http://www.emacswiki.org/emacs/EtagsSelect#toc3][this function]] to use IDO in conjunctions
+   with the TAGS file for all functions in the project:
+
+   #+BEGIN_SRC elisp
+     (use-package ido
+       :config
+       (defun ido-find-tag ()
+         "Find a tag using ido"
+         (interactive)
+         (tags-completion-table)
+         (let (tag-names)
+           (mapatoms (lambda (x)
+                       (push (prin1-to-string x t) tag-names))
+                     tags-completion-table)
+           (find-tag (ido-completing-read "Tag: " tag-names))))
+
+       (global-set-key (kbd "C-c I") 'ido-find-tag))
+   #+END_SRC
+
+   Emacs 25 changed has now deprecated the famous [[info:emacs#Tags][Tags and Friends]],
+   like =find-tags= for =xref=.
+
+   Note: This prompt needs to go away:
+
+   #+BEGIN_SRC elisp
+     (setq tags-add-tables nil)
+   #+END_SRC
+
+   What if the marker stack is empty? M-, returns an error. Let's do a
+   DWIM function:
+
+   #+BEGIN_SRC elisp
+     (defun ha/xref-pop-marker-stack (arg)
+       "Pops the marker stack, unless I haven't searched a tag/xref
+     with `M-.' and there is nothing to return to, in which case, let's
+     jump back to the last change."
+       (interactive "P")
+       (condition-case nil
+           (xref-pop-marker-stack)
+         (error
+          (goto-last-change arg))))
+
+     (bind-key "M-," 'ha/xref-pop-marker-stack)
+   #+END_SRC
+
+*** Code Block Folding
+
+    The [[info:emacs#Hideshow][Hide Show Minor]] mode allows us to /fold/ all functions
+    (hidden), showing only the header lines. We need to turn on the
+    mode, so wrappers are in order:
+
+    #+BEGIN_SRC elisp
+      (defun ha/hs-show-all ()
+        (interactive)
+        (hs-minor-mode 1)
+        (hs-show-all))
+
+      (defun ha/hs-hide-all ()
+        (interactive)
+        (hs-minor-mode 1)
+        (hs-hide-all))
+
+      (defun ha/hs-toggle-hiding ()
+        (interactive)
+        (hs-minor-mode 1)
+        (hs-toggle-hiding))
+    #+END_SRC
+
+    Seems that =C-c @= is too obnoxious to use, so I'll put my
+    favorite on the =C-c h= prefix:
+
+    #+BEGIN_SRC elisp
+      (use-package hs-minor-mode
+        :bind
+        ("C-c T h" . hs-minor-mode)
+        ("C-c h a" . ha/hs-hide-all)
+        ("C-c h s" . ha/hs-show-all)
+        ("C-c h h" . ha/hs-toggle-hiding))
+    #+END_SRC
+
+    See the [[http://www.emacswiki.org/emacs/HideShow][online resources]].
+
+*** Aggressive Auto Indention
+
+    Automatically indent without use of the tab found in [[http://endlessparentheses.com/permanent-auto-indentation.html][this article]],
+    and seems to be quite helpful for many types of programming
+    languages.
+
+    To begin, we create a function that can indent a function by
+    calling =indent-region= on the beginning and ending points of a
+    function.
+
+    #+BEGIN_SRC elisp
+      (defun indent-defun ()
+        "Indent current defun.
+      Do nothing if mark is active (to avoid deactivaing it), or if
+      buffer is not modified (to avoid creating accidental
+      modifications)."
+        (interactive)
+        (unless (or (region-active-p)
+                    buffer-read-only
+                    (null (buffer-modified-p)))
+          (let ((l (save-excursion (beginning-of-defun 1) (point)))
+                (r (save-excursion (end-of-defun 1) (point))))
+            (cl-letf (((symbol-function 'message) #'ignore))
+              (indent-region l r)))))
+    #+END_SRC
+
+    Next, create a hook that will call the =indent-defun= with every
+    command call:
+
+    #+BEGIN_SRC elisp
+      (defun activate-aggressive-indent ()
+        "Locally add `ha/indent-defun' to `post-command-hook'."
+        (add-hook 'post-command-hook
+                  'indent-defun nil 'local))
+    #+END_SRC
+
+*** Red Warnings
+
+    Various keywords (in comments) are now flagged in a Red Error font:
+
+    #+BEGIN_SRC elisp
+      (add-hook 'prog-common-hook
+                (lambda ()
+                  (font-lock-add-keywords nil
+                                          '(("\\<\\(FIX\\|FIXME\\|TODO\\|BUG\\|HACK\\):" 1 font-lock-warning-face t)))))
+    #+END_SRC
+
+*** XML
+
+    Can't believe we are still dealing with this awful data format.
+
+    #+BEGIN_SRC elisp
+      (setq nxml-slash-auto-complete-flag t)
+    #+END_SRC
+
+    Remember a couple of bindings:
+
+    - ~C-c C-i~ :: Type =<p= and then this, to have the other tag inserted
+         and the cursor in the middle.
+    - ~C-c C-f~ :: Finish any opened tag that needs to be completed.
+    - ~C-c C-s C-a~ :: After putting in the schema, use this to refresh it
+** Shell Scripts
+
+   Files in my =bin= directory (but /only/ if it doesn't have any
+   other extension), should start in =sh-mode=:
+
+   #+BEGIN_SRC elisp
+     (add-to-list 'auto-mode-alist '("/bin/" . sh-mode))
+   #+END_SRC
+
+* Tools
+** Git
+
+   I like [[https://github.com/syohex/emacs-git-gutter-fringe][git-gutter-fringe]]:
+
+   #+BEGIN_SRC elisp
+     (use-package git-gutter-fringe
+        :ensure t
+        :diminish git-gutter-mode
+        :init (setq git-gutter-fr:side 'right-fringe)
+        :config (global-git-gutter-mode t))
+   #+END_SRC
+
+   I want to have special mode for Git's =configuration= file:
+
+   #+BEGIN_SRC elisp
+     (use-package gitconfig-mode
+       :ensure t)
+
+     (use-package gitignore-mode
+       :ensure t)
+   #+END_SRC
+
+   Finally, I want to play with [[https://github.com/emacsmirror/git-timemachine][Git Time Machine]] project for stepping
+   backward through the version history of a file:
+
+   #+BEGIN_SRC elisp
+     (use-package git-timemachine)
+   #+END_SRC
+
+** Magit
+
+   Git is [[http://emacswiki.org/emacs/Git][already part of Emacs]]. However, [[http://philjackson.github.com/magit/magit.html][Magit]] is sweet.
+   Don't believe me? Check out [[https://www.youtube.com/watch?v=vQO7F2Q9DwA][this video]].
+
+   #+BEGIN_SRC elisp
+     (use-package magit
+       :ensure t
+       :commands magit-status magit-blame
+       :init
+       (defadvice magit-status (around magit-fullscreen activate)
+         (window-configuration-to-register :magit-fullscreen)
+         ad-do-it
+         (delete-other-windows))
+       :config
+       (setq magit-branch-arguments nil
+             ;; use ido to look for branches
+             magit-completing-read-function 'magit-ido-completing-read
+             ;; don't put "origin-" in front of new branch names by default
+             magit-default-tracking-name-function 'magit-default-tracking-name-branch-only
+             magit-push-always-verify nil
+             ;; Get rid of the previous advice to go into fullscreen
+             magit-restore-window-configuration t)
+
+       :bind ("C-x g" . magit-status))
+   #+END_SRC
+
+   I like having Magit to run in a /full screen/ mode, and add the
+   above =defadvice= idea from [[https://github.com/magnars/.emacs.d/blob/master/setup-magit.el][Sven Magnars]].
+
+   *Note:* Use the [[https://github.com/jwiegley/emacs-release/blob/master/lisp/vc/smerge-mode.el][smerge-mode]] that is now part of Emacs.
+
+** Markdown
+
+   Don't use Markdown nearly as much as I used to, but I'm surprised
+   that the following extension-associations aren't the default:
+
+   #+BEGIN_SRC elisp
+     (use-package markdown-mode
+       :ensure t
+       :mode ("\\.\\(m\\(ark\\)?down\\|md\\)$" . markdown-mode)
+       :config
+       (bind-key "A-b" (surround-text-with "+*") markdown-mode-map)
+       (bind-key "s-b" (surround-text-with "**") markdown-mode-map)
+       (bind-key "A-i" (surround-text-with "*") markdown-mode-map)
+       (bind-key "s-i" (surround-text-with "*") markdown-mode-map)
+       (bind-key "A-=" (surround-text-with "`") markdown-mode-map)
+       (bind-key "s-=" (surround-text-with "`") markdown-mode-map))
+   #+END_SRC
+
+** PlantUML and Graphviz
+
+   Install the [[http://www.graphviz.org/][Graphviz]] and [[http://plantuml.sourceforge.net/download.html][PlantUML]] projects using Homebrew:
+
+   #+BEGIN_SRC shell
+     brew install graphviz
+     brew link graphviz
+     brew install plantuml
+   #+END_SRC
+
+   Load the [[https://github.com/wildsoul/plantuml-mode][mode for PlantUML]] and reference its jar:
+
+   #+BEGIN_SRC elisp
+     (let ((plantuml-jar (car (file-expand-wildcards "/usr/local/Cellar/plantuml/*/plantuml*.jar"))))
+       (ignore-errors
+         (use-package plantuml-mode
+           :if plantuml-jar
+           :init
+           (setq plantuml-jar-path plantuml-jar
+                 org-plantuml-jar-path plantuml-jar))))
+   #+END_SRC
+
+   And the [[http://ppareit.github.com/graphviz-dot-mode/][mode for Graphviz]]:
+
+   #+BEGIN_SRC elisp
+     (use-package graphviz-dot-mode
+        :ensure t)
+   #+END_SRC
+
+* Frivolous
+
+  Life must be more whimsical. To begin, install the =fortune= package:
+  #+BEGIN_SRC shell
+    brew install fortune   # Installs in /usr/local/share/games/fortunes
+  #+END_SRC
+  Or, if on Ubuntu:
+  #+BEGIN_SRC shell
+    sudo apt-get install fortune # Installs in /usr/share/games/fortunes
+  #+END_SRC
+
+  Let's create a variable for knowing if we have everything installed:
+  #+BEGIN_SRC elisp
+    (defvar ha/can-haz-cookie-p nil "Is true if the fortune system has been correctly configured")
+  #+END_SRC
+
+  Since fortune installs quite a few files (some of which we don't
+  like), and we may want to run the same code on multiple operating
+  systems, we write a little wrapper function around the =cookie=
+  function to pick one of our favorite files (if available) at random:
+
+  #+BEGIN_SRC elisp
+    (defun ha/cookie ()
+      "Returns a phrase from a random `fortune' file from standard locations."
+      (interactive)
+      (condition-case nil
+          (let* ((favs "computers$\\|definitions$\\|drugs$\\|fortunes$\\|goedel$\\|linuxcookie$\\|magic$")
+                 (paths '("/usr/share/games/fortunes" "/usr/local/share/games/fortunes"))
+                 (path (car (-filter 'file-exists-p paths)))
+                 (files (directory-files path t favs))
+                 (file (nth (random (length files)) files)))
+            (setq ha/can-haz-cookie-p t)
+            (message "%s" (cookie file)))
+        (error (message "Happy Hacking!"))))
+  #+END_SRC
+
+  And let's display a frivolous message each time we return to Emacs:
+
+  #+BEGIN_SRC elisp
+    (when ha/can-haz-cookie-p
+      (add-hook 'focus-in-hook 'ha/cookie))
+  #+END_SRC
+
+
+* Technical Artifacts
+
+** Setting up the Exec Path
+
+   Make sure that =PATH= variable for finding binary files can is the
+   same as what Emacs will look for binary files. This little magic,
+   starts up a shell, gets its path, and then uses that for the
+   =exec-path=:
+
+   #+BEGIN_SRC elisp
+     (when window-system
+       (let ((path-from-shell (shell-command-to-string "/bin/bash -l -c 'echo $PATH'")))
+         (setenv "PATH" path-from-shell)
+         (setq exec-path (split-string path-from-shell path-separator))))
+   #+END_SRC
+
+** Load up the Local Configuration
+
+   Before we finish, we need to check if there is a local file for us
+   to load and evaluate.  We assume the local file has been tangled
+   and provides the =init-local= key:
+
+   #+BEGIN_SRC elisp
+     (require 'init-local nil t)
+   #+END_SRC
+
+   Set up the emacs client stuff.
+   #+begin_src elisp
+     (require 'init-client)
+   #+end_src
+
+   Finally, let's get happy:
+
+   #+BEGIN_SRC elisp
+     (defun display-startup-echo-area-message ()
+       (ha/cookie))
+   #+END_SRC
+
+   After the first load, we can reload this with a require:
+
+   #+BEGIN_SRC elisp
+     (provide 'init-main)
+   #+END_SRC
+
+** Other stuff not yet literalized
+
+   #+begin_src elisp :tangle no
+     (custom-set-variables
+      ;; custom-set-variables was added by Custom.
+      ;; If you edit it by hand, you could mess it up, so be careful.
+      ;; Your init file should contain only one such instance.
+      ;; If there is more than one, they won't work right.
+      '(ORG-capture-templates
+	(quote
+	 (("t" "Todo" entry
+	   (file+headline "~/ORG/todo.org" "Tasks")
+	   "* TODO %?
+      %u")
+	  ("n" "Notes" entry
+	   (file "~/ORG/notes.org")
+	   "* %u %?"))))
+      '(custom-enabled-themes (quote (misterioso)))
+      '(frame-background-mode (quote dark))
+      '(js-indent-level 2)
+      '(line-number-mode nil)
+      '(org-agenda-custom-commands
+	(quote
+	 (("d" todo "DELEGATED" nil)
+	  ("c" todo "DONE|DEFERRED|CANCELLED" nil)
+	  ("w" todo "WAITING" nil)
+	  ("W" agenda ""
+	   ((org-agenda-ndays 21)))
+	  ("A" agenda ""
+	   ((org-agenda-skip-function
+	     (lambda nil
+	       (org-agenda-skip-entry-if
+		(quote notregexp)
+		"\\=.*\\[#A\\]")))
+	    (org-agenda-ndays 1)
+	    (org-agenda-overriding-header "Today's Priority #A tasks: ")))
+	  ("u" alltodo ""
+	   ((org-agenda-skip-function
+	     (lambda nil
+	       (org-agenda-skip-entry-if
+		(quote scheduled)
+		(quote deadline)
+		(quote regexp)
+		"
+     ]+>")))
+	    (org-agenda-overriding-header "Unscheduled TODO entries: "))))))
+      '(org-agenda-files (quote ("~/ORG/todo.org")))
+      '(org-agenda-ndays 7)
+      '(org-agenda-show-all-dates t)
+      '(org-agenda-skip-deadline-if-done t)
+      '(org-agenda-skip-scheduled-if-done t)
+      '(org-agenda-start-on-weekday nil)
+      '(org-capture-templates
+	(quote
+	 (("t" "Todo" entry
+	   (file+headline "~/ORG/todo.org" "Tasks")
+	   "* TODO %?
+      %u")
+	  ("n" "Notes" entry
+	   (file "~/ORG/notes.org")
+	   "* %u %?"))))
+      '(org-deadline-warning-days 14)
+      '(org-default-notes-file "~/ORG/notes.org")
+      '(org-directory "~/ORG")
+      '(org-fast-tag-selection-single-key (quote expert))
+      '(org-reverse-note-order t)
+      '(package-selected-packages
+	(quote
+	 (inf-ruby org rspec-mode projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
+      '(plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar")
+      '(remember-annotation-functions (quote (org-remember-annotation)))
+      '(remember-handler-functions (quote (org-remember-handler))))
+     (custom-set-faces
+      ;; custom-set-faces was added by Custom.
+      ;; If you edit it by hand, you could mess it up, so be careful.
+      ;; Your init file should contain only one such instance.
+      ;; If there is more than one, they won't work right.
+      '(default ((t (:inherit nil :stipple nil :background "#2d3743" :foreground "#e1e1e0" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 160 :width normal :foundry "nil" :family "Menlo"))))
+      '(cursor ((t (:background "MediumPurple1")))))
+
+     ;; Ensure that the exec path has all my env goodies
+     (when (memq window-system '(mac ns x))
+       (exec-path-from-shell-initialize))
+
+     ;; Magit
+     (global-set-key (kbd "\C-x g") 'magit-status)
+
+     ;; ORG
+     (require 'org-install)
+     (global-set-key "\C-cl" 'org-store-link)
+     (global-set-key "\C-ca" 'org-agenda)
+     (global-set-key "\C-cc" 'org-capture)
+     (global-set-key "\C-cb" 'org-switchb)
+     (eval-after-load "org"
+       '(progn
+	  (define-prefix-command 'org-todo-state-map)
+	  (define-key org-mode-map "\C-cx" 'org-todo-state-map)
+	  (define-key org-todo-state-map "x" #'(lambda nil (interactive) (org-todo "CANCELLED")))
+	  (define-key org-todo-state-map "d" #'(lambda nil (interactive) (org-todo "DONE")))
+	  (define-key org-todo-state-map "f" #'(lambda nil (interactive) (org-todo "DEFERRED")))
+	  (define-key org-todo-state-map "l" #'(lambda nil (interactive) (org-todo "DELEGATED")))
+	  (define-key org-todo-state-map "s" #'(lambda nil (interactive) (org-todo "STARTED")))
+	  (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
+	  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+	  (org-babel-do-load-languages
+	   'org-babel-load-languages
+	   '((shell . t)
+	     (ruby . t)))))
+
+   #+end_src
