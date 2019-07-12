@@ -20,12 +20,6 @@ other systems with a graphical front-end.
 
   #+BEGIN_SRC elisp
     (bind-keys
-     ("s-z" . undo-tree-undo)
-     ("A-z" . undo-tree-undo)
-     ("s-y" . undo-tree-redo)
-     ("A-y" . undo-tree-redo)
-     ("s-Z" . undo-tree-redo)
-     ("A-Z" . undo-tree-redo)
      ("s-x" . kill-region)
      ("A-x" . kill-region)
      ("s-c" . kill-ring-save)
@@ -59,8 +53,6 @@ other systems with a graphical front-end.
      ("A-<up>" . beginning-of-buffer)
      ("s-<down>" . end-of-buffer)
      ("A-<down>" . end-of-buffer)
-     ("s-<left>" . smarter-move-beginning-of-line)
-     ("A-<left>" . smarter-move-beginning-of-line)
      ("s-<right>" . move-end-of-line)
      ("A-<right>" . move-end-of-line)
 
@@ -77,7 +69,7 @@ other systems with a graphical front-end.
     (defun ha/text-scale-frame-change (fn)
       (let* ((current-font-name (frame-parameter nil 'font))
              (decomposed-font-name (x-decompose-font-name current-font-name))
-             (font-size (string-to-int (aref decomposed-font-name 5))))
+             (font-size (string-to-number (aref decomposed-font-name 5))))
         (aset decomposed-font-name 5 (int-to-string (funcall fn font-size)))
         (set-frame-font (x-compose-font-name decomposed-font-name))))
 
@@ -331,8 +323,10 @@ other systems with a graphical front-end.
     (advice-add 'self-insert-command :after #'cursor-hide)
   #+END_SRC
 
-  After I'm done typing (that is, when the cursor is idle), show the cursor:
-  #+BEGIN_SRC elisp
+  After I'm done typing (that is, when the cursor is idle), show the
+  cursor:
+  > Right now this seems to be useless.
+  #+BEGIN_SRC elisp :tangle no
     (setq my-cursor-timer (run-with-idle-timer 1 t #'cursor-show))
   #+END_SRC
 

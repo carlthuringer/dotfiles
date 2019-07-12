@@ -74,6 +74,15 @@
        (load custom-file))
    #+END_SRC
 
+** Setting up the Load Path
+
+   Extra packages not available via the package manager go in my
+   personal stash at: =$HOME/.emacs.d/elisp=
+
+   #+BEGIN_SRC elisp
+     (add-to-list 'load-path (ha/emacs-subdirectory "elisp"))
+   #+END_SRC
+
 ** Modernizing Emacs
 
    With a long history of working on small machines without gigabytes
@@ -218,8 +227,7 @@
 ** Displaying Command Sequences
 
    Many command sequences may be logical, but who can remember them
-   all? While I used to use [[https://github.com/kai2nenobu/guide-key][guide-key]] to display the final function
-   name, it isn't as nice as [[https://github.com/justbur/emacs-which-key][which-key]].
+   all? [[https://github.com/justbur/emacs-which-key][which-key]] to the rescue.
 
    #+BEGIN_SRC elisp
      (use-package which-key
@@ -231,7 +239,7 @@
        ;; Replacements for how KEY is replaced when which-key displays
        ;;   KEY → FUNCTION
        ;; Eg: After "C-c", display "right → winner-redo" as "▶ → winner-redo"
-       (setq which-key-key-replacement-alist
+       (setq which-key-replacement-alist
              '(("<\\([[:alnum:]-]+\\)>" . "\\1")
                ("left"                  . "◀")
                ("right"                 . "▶")
@@ -249,7 +257,7 @@
                                       "SPC" "TAB")
 
              ;; Replacements for how part or whole of FUNCTION is replaced:
-             which-key-description-replacement-alist
+             which-key-replacement-alist
              '(("Prefix Command" . "prefix")
                ("\\`calc-"       . "") ; Hide "calc-" prefixes when listing M-x calc keys
                ("\\`projectile-" . "𝓟/")
@@ -447,7 +455,7 @@
        - `#s` wraps the region in a source code block
        - `#e` wraps it in an example block
        - `#q` wraps it in an quote block"
-       (interactive "r\nsEnter text to surround: " start end txt)
+       (interactive "r\nsEnter text to surround: ")
 
        ;; If the region is not active, we use the 'thing-at-point' function
        ;; to get a "symbol" (often a variable or a single word in text),
@@ -501,50 +509,53 @@
 
 ** Projectile
 #+BEGIN_SRC elisp
-     (use-package projectile
-       :ensure t
-       :diminish projectile-mode
-       :init (projectile-global-mode 1)
-       :commands projectile-ag
-       :config
-       (setq projectile-switch-project-action 'projectile-commander
-             projectile-completion-system 'ido
-             projectile-create-missing-test-files t
-             projectile-keymap-prefix (kbd "C-x p"))
-       (add-to-list 'projectile-globally-ignored-files ".DS_Store")
+  (use-package projectile
+    :ensure t
+    :diminish projectile-mode
+    :init (projectile-mode 1)
+    :commands projectile-ag
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :bind (:map projectile-mode-map
+                ("C-x p" . nil))
+    :config
+    (setq projectile-switch-project-action 'projectile-commander
+          projectile-completion-system 'ido
+          projectile-create-missing-test-files t)
+    (add-to-list 'projectile-globally-ignored-files ".DS_Store")
 
-       (def-projectile-commander-method ?d
-         "Open project root in dired."
-         (projectile-dired))
+    (def-projectile-commander-method ?d
+      "Open project root in dired."
+      (projectile-dired))
 
-       (def-projectile-commander-method ?s
-         "Open a *shell* buffer for the project."
-         (projectile-run-shell))
+    (def-projectile-commander-method ?s
+      "Open a *shell* buffer for the project."
+      (projectile-run-shell))
 
-       (def-projectile-commander-method ?X
-         "Open a Direx buffer on the side."
-         (call-interactively #'ha/projectile-direx))
+    (def-projectile-commander-method ?X
+      "Open a Direx buffer on the side."
+      (call-interactively #'ha/projectile-direx))
 
-       (def-projectile-commander-method ?F
-         "Git fetch."
-         (magit-status)
-         (call-interactively #'magit-fetch-current))
+    (def-projectile-commander-method ?F
+      "Git fetch."
+      (magit-status)
+      (call-interactively #'magit-fetch-current))
 
-       (def-projectile-commander-method ?j
-         "Jack-in with Cider."
-         (let* ((opts (projectile-current-project-files))
-                (file (ido-completing-read
-                       "Find file: "
-                       opts
-                       nil nil nil nil
-                       (car (cl-member-if
-                             (lambda (f)
-                               (string-match "core\\.clj\\'" f))
-                             opts)))))
-           (find-file (expand-file-name
-                       file (projectile-project-root)))
-           (run-hooks 'projectile-find-file-hook)
-           (cider-jack-in))))
+    (def-projectile-commander-method ?j
+      "Jack-in with Cider."
+      (let* ((opts (projectile-current-project-files))
+             (file (ido-completing-read
+                    "Find file: "
+                    opts
+                    nil nil nil nil
+                    (car (cl-member-if
+                          (lambda (f)
+                            (string-match "core\\.clj\\'" f))
+                          opts)))))
+        (find-file (expand-file-name
+                    file (projectile-project-root)))
+        (run-hooks 'projectile-find-file-hook)
+        (cider-jack-in))))
    #+END_SRC
 
   Much of the previous section came from [[http://endlessparentheses.com/improving-projectile-with-extra-commands.html][this essay]].
@@ -566,12 +577,6 @@
    currently experimenting with other options.
 
 ** Dired Options
-
-   Between =M-!= and starting [[Eshell][Eshell]], comes =dired= (=C-x d=).
-
-   #+BEGIN_SRC elisp
-     (setq ls-lisp-use-insert-directory-program nil)
-   #+END_SRC
 
    This enhancement to dired hides the ugly details until you hit
    '(' and shows the details with ')'. I also change the [...] to a
@@ -906,7 +911,7 @@
            (mapatoms (lambda (x)
                        (push (prin1-to-string x t) tag-names))
                      tags-completion-table)
-           (find-tag (ido-completing-read "Tag: " tag-names))))
+           (xref-find-definitions (ido-completing-read "Tag: " tag-names))))
 
        (global-set-key (kbd "C-c I") 'ido-find-tag))
    #+END_SRC
@@ -1071,7 +1076,8 @@
    backward through the version history of a file:
 
    #+BEGIN_SRC elisp
-     (use-package git-timemachine)
+     (use-package git-timemachine
+       :ensure t)
    #+END_SRC
 
 ** Magit
@@ -1082,7 +1088,7 @@
    #+BEGIN_SRC elisp
      (use-package magit
        :ensure t
-       :commands magit-status magit-blame
+       :commands magit-status magit-blame-addition
        :init
        (defadvice magit-status (around magit-fullscreen activate)
          (window-configuration-to-register :magit-fullscreen)
@@ -1091,12 +1097,7 @@
        :config
        (setq magit-branch-arguments nil
              ;; use ido to look for branches
-             magit-completing-read-function 'magit-ido-completing-read
-             ;; don't put "origin-" in front of new branch names by default
-             magit-default-tracking-name-function 'magit-default-tracking-name-branch-only
-             magit-push-always-verify nil
-             ;; Get rid of the previous advice to go into fullscreen
-             magit-restore-window-configuration t)
+             magit-completing-read-function 'magit-ido-completing-read)
 
        :bind ("C-x g" . magit-status))
    #+END_SRC
@@ -1213,7 +1214,7 @@
          (setq exec-path (split-string path-from-shell path-separator))))
    #+END_SRC
 
-** Load up the Local Configuration
+** Load all tangled configurations
 
    Before we finish, we need to check if there is a local file for us
    to load and evaluate.  We assume the local file has been tangled
@@ -1226,6 +1227,11 @@
    Set up the emacs client stuff.
    #+begin_src elisp
      (require 'init-client)
+   #+end_src
+
+   Set up org mode
+   #+begin_src elisp
+     (require 'init-org-mode)
    #+end_src
 
    Finally, let's get happy:
