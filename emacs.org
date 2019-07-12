@@ -1089,11 +1089,6 @@
      (use-package magit
        :ensure t
        :commands magit-status magit-blame-addition
-       :init
-       (defadvice magit-status (around magit-fullscreen activate)
-         (window-configuration-to-register :magit-fullscreen)
-         ad-do-it
-         (delete-other-windows))
        :config
        (setq magit-branch-arguments nil
              ;; use ido to look for branches
