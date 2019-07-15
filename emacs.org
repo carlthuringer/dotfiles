@@ -1057,6 +1057,15 @@
    Git is [[http://emacswiki.org/emacs/Git][already part of Emacs]]. However, [[http://philjackson.github.com/magit/magit.html][Magit]] is sweet.
    Don't believe me? Check out [[https://www.youtube.com/watch?v=vQO7F2Q9DwA][this video]].
 
+   Before we can use magit with Ido, we apparently need to install the
+   =ido-completing-read+= package.
+
+   #+begin_src elisp
+     (use-package ido-completing-read+
+       :ensure t)
+
+   #+end_src
+
    #+BEGIN_SRC elisp
      (use-package magit
        :ensure t
