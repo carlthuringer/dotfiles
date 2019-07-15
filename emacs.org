@@ -995,6 +995,23 @@
          and the cursor in the middle.
     - ~C-c C-f~ :: Finish any opened tag that needs to be completed.
     - ~C-c C-s C-a~ :: After putting in the schema, use this to refresh it
+
+*** ANSI Color Codes
+
+    Compilation buffers get messed up pretty bad by ANSI color
+    escapes, which show up plenty enough. So let's try to
+    automatically clean those up:
+
+    #+begin_src elisp
+      (use-package ansi-color
+        :init
+        (defun colorize-compilation-buffer ()
+          (toggle-read-only)
+          (ansi-color-apply-on-region (point-min) (point-max))
+          (toggle-read-only))
+        :config
+        (add-hook 'compilation-filter-hook 'colorize-compilation-buffer))
+    #+end_src
 ** Shell Scripts
 
    Files in my =bin= directory (but /only/ if it doesn't have any
@@ -1305,5 +1322,4 @@
 	   'org-babel-load-languages
 	   '((shell . t)
 	     (ruby . t)))))
-
    #+end_src

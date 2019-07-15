@@ -75,6 +75,21 @@
             (org-agenda-overriding-header "Unscheduled TODO entries: "))))))
    #+end_src
 
+* Literate Programming
+
+  To support literate programming, we need to activate some language
+  support for org-babel:
+
+  #+begin_src elisp
+    (use-package org
+      :ensure t
+      :config
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '((shell . t)
+         (ruby . t))))
+  #+end_src
+
 * Technical Artifacts
 
   Provide ourselves as a package
