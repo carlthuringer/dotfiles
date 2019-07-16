@@ -63,7 +63,7 @@
        (setq org-capture-templates
         '(("t" "Todo" entry
            (file+headline "~/org/todo.org" "Tasks")
-           "* TODO %?\n%u")
+           "* TODO %?")
           ("n" "Notes" entry
            (file "~/org/notes.org")
            "* %u %?"))
