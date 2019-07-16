@@ -57,10 +57,13 @@
         org-default-notes-file "~/org/notes.org"
         org-directory "~/org")
        :bind (("C-c c" . org-capture)
-              ("C-c a" . org-agenda))
+              ("C-c a" . org-agenda)
+              :map org-mode-map
+              ("C-c ," . org-time-stamp-inactive))
        :config
        ;; Set up some capture templates to default to my org files
-       (setq org-capture-templates
+       (setq
+        org-capture-templates
         '(("t" "Todo" entry
            (file+headline "~/org/todo.org" "Tasks")
            "* TODO %?")
