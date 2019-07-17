@@ -84,13 +84,14 @@
   support for org-babel:
 
   #+begin_src elisp
-    (use-package org
-      :ensure t
-      :config
-      (org-babel-do-load-languages
-       'org-babel-load-languages
-       '((shell . t)
-         (ruby . t))))
+        (use-package org
+          :ensure t
+          :config
+          (org-babel-do-load-languages
+           'org-babel-load-languages
+           '((shell . t)
+             (ruby . t)
+             (plantuml . t))))
   #+end_src
 
 * Technical Artifacts

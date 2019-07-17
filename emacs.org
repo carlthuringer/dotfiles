@@ -1114,7 +1114,7 @@
    Load the [[https://github.com/wildsoul/plantuml-mode][mode for PlantUML]] and reference its jar:
 
    #+BEGIN_SRC elisp
-     (let ((plantuml-jar (car (file-expand-wildcards "/usr/local/Cellar/plantuml/*/plantuml*.jar"))))
+     (let ((plantuml-jar (car (file-expand-wildcards "/usr/local/Cellar/plantuml/*/libexec/plantuml.jar"))))
        (ignore-errors
          (use-package plantuml-mode
            :if plantuml-jar
