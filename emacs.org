@@ -848,17 +848,6 @@
         regexp
    - =M-x list-tags= :: list all tags defined in a source file
 
-   With the fancy new [[https://marmalade-repo.org/packages/ctags-update][ctags-update]] package, we can update the tags file
-   whenever we save a file:
-
-   #+BEGIN_SRC elisp
-     (use-package ctags-update
-       :ensure t
-       :config
-       (add-hook 'prog-mode-hook  'turn-on-ctags-auto-update-mode)
-       :diminish ctags-auto-update-mode)
-   #+END_SRC
-
    While, I like =imenu=, [[https://github.com/vspinu/imenu-anywhere][combining it]] with an IDO interface nicely
    lists the headings/functions in the current buffer:
 
@@ -866,13 +855,6 @@
      (use-package idomenu
        :ensure t
        :bind ("C-c i" . idomenu))
-   #+END_SRC
-
-   If I don't know what I'm after, Helm is better:
-
-   #+BEGIN_SRC elisp :tangle no
-     (use-package helm
-       :bind (("C-c M-i" . helm-imenu)))
    #+END_SRC
 
    However, I need to use [[http://www.emacswiki.org/emacs/EtagsSelect#toc3][this function]] to use IDO in conjunctions
