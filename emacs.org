@@ -17,6 +17,10 @@
   every swiped section. He's licensed it with (CC BY 3.0) so all I
   have to do is give him credit for the original.
 
+  I also found [[http://aaronbedra.com/emacs.d/][Aaron Bedra's]] Emacs configuration. His website has a
+  copyright but no apparent license. I will assume that emacs lisp
+  statements copied for my personal use are fairly used.
+
 ** Emacs Executable
 
    Typically I just install Emacs from Homebrew Cask. This is fine for
@@ -100,6 +104,23 @@
      (setq gnutls-min-prime-bits 4096)
    #+END_SRC
 
+** Startup
+
+
+   Prevent the splash screen and scratch message. Go right to the
+   scratch buffer and enable org-mode.
+
+
+   #+BEGIN_SRC elisp
+     (setq inhibit-splash-screen t
+           initial-scratch-message nil
+           visible-bell t              ;; Get rid of the beeps
+           initial-major-mode 'org-mode ;; Default to org mode on startup
+           use-dialog-box nil          ;; Don't show the dialog boxes.
+     )
+   #+END_SRC
+
+
 * Package Initialization
 ** Package manager
 
@@ -170,16 +191,16 @@
 
 * Display Settings
 
-
+  Here we disable the toolbars and scrollbars and menu bars on window
+  system.
   #+BEGIN_SRC elisp
-    (setq initial-scratch-message "") ;; No scratch message
-    (setq visible-bell t)             ;; Get rid of the beeps
-
     (when (window-system)
-      (tool-bar-mode 0)               ;; No Toolbars
+      (tool-bar-mode -1)               ;; No Toolbars
+      (menu-bar-mode -1)               ;; No Menu Bars
+      (scroll-bar-mode -1) ;; No scrollbars
       (when (fboundp 'horizontal-scroll-bar-mode)
-        (horizontal-scroll-bar-mode -1))
-      (scroll-bar-mode -1))            ;; No Scrollbars
+        (horizontal-scroll-bar-mode -1)))
+    (show-paren-mode t)    ;; Show parens!
   #+END_SRC
 
   Colored highlighting of selected text needs to be both
@@ -632,12 +653,13 @@
       (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
     #+END_SRC
 
-** Backup Settings
+** Backup
+   Settings
 
    This setting moves all backup files to a central location.
-   Got it from [[http://whattheemacsd.com/init.el-02.html][this page]].
+   Got it from [[http://whattheemacsd.com/init.el-02.html][this page]]. But I don't want to use backups anymore.
 
-   #+BEGIN_SRC elisp
+   #+BEGIN_SRC elisp :tangle no
      (setq backup-directory-alist
            `(("." . ,(expand-file-name
                       (ha/emacs-subdirectory "backups")))))
@@ -648,9 +670,10 @@
      (setq tramp-backup-directory-alist backup-directory-alist)
    #+END_SRC
 
-   Make backups of files, even when they're in version control:
+   Do not make backups of files
    #+BEGIN_SRC elisp
-     (setq vc-make-backup-files t)
+     (setq vc-make-backup-files nil
+           make-backup-files nil)
    #+END_SRC
 
    And let’s make sure our files are saved if we wander off and
@@ -1222,113 +1245,3 @@
    #+BEGIN_SRC elisp
      (provide 'init-main)
    #+END_SRC
-
-** Other stuff not yet literalized
-
-   #+begin_src elisp :tangle no
-     (custom-set-variables
-      ;; custom-set-variables was added by Custom.
-      ;; If you edit it by hand, you could mess it up, so be careful.
-      ;; Your init file should contain only one such instance.
-      ;; If there is more than one, they won't work right.
-      '(ORG-capture-templates
-	(quote
-	 (("t" "Todo" entry
-	   (file+headline "~/ORG/todo.org" "Tasks")
-	   "* TODO %?
-      %u")
-	  ("n" "Notes" entry
-	   (file "~/ORG/notes.org")
-	   "* %u %?"))))
-      '(custom-enabled-themes (quote (misterioso)))
-      '(frame-background-mode (quote dark))
-      '(js-indent-level 2)
-      '(line-number-mode nil)
-      '(org-agenda-custom-commands
-	(quote
-	 (("d" todo "DELEGATED" nil)
-	  ("c" todo "DONE|DEFERRED|CANCELLED" nil)
-	  ("w" todo "WAITING" nil)
-	  ("W" agenda ""
-	   ((org-agenda-ndays 21)))
-	  ("A" agenda ""
-	   ((org-agenda-skip-function
-	     (lambda nil
-	       (org-agenda-skip-entry-if
-		(quote notregexp)
-		"\\=.*\\[#A\\]")))
-	    (org-agenda-ndays 1)
-	    (org-agenda-overriding-header "Today's Priority #A tasks: ")))
-	  ("u" alltodo ""
-	   ((org-agenda-skip-function
-	     (lambda nil
-	       (org-agenda-skip-entry-if
-		(quote scheduled)
-		(quote deadline)
-		(quote regexp)
-		"
-     ]+>")))
-	    (org-agenda-overriding-header "Unscheduled TODO entries: "))))))
-      '(org-agenda-files (quote ("~/ORG/todo.org")))
-      '(org-agenda-ndays 7)
-      '(org-agenda-show-all-dates t)
-      '(org-agenda-skip-deadline-if-done t)
-      '(org-agenda-skip-scheduled-if-done t)
-      '(org-agenda-start-on-weekday nil)
-      '(org-capture-templates
-	(quote
-	 (("t" "Todo" entry
-	   (file+headline "~/ORG/todo.org" "Tasks")
-	   "* TODO %?
-      %u")
-	  ("n" "Notes" entry
-	   (file "~/ORG/notes.org")
-	   "* %u %?"))))
-      '(org-deadline-warning-days 14)
-      '(org-default-notes-file "~/ORG/notes.org")
-      '(org-directory "~/ORG")
-      '(org-fast-tag-selection-single-key (quote expert))
-      '(org-reverse-note-order t)
-      '(package-selected-packages
-	(quote
-	 (inf-ruby org rspec-mode projectile htmlize plantuml-mode markdown-mode magit terraform-mode exec-path-from-shell)))
-      '(plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar")
-      '(remember-annotation-functions (quote (org-remember-annotation)))
-      '(remember-handler-functions (quote (org-remember-handler))))
-     (custom-set-faces
-      ;; custom-set-faces was added by Custom.
-      ;; If you edit it by hand, you could mess it up, so be careful.
-      ;; Your init file should contain only one such instance.
-      ;; If there is more than one, they won't work right.
-      '(default ((t (:inherit nil :stipple nil :background "#2d3743" :foreground "#e1e1e0" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 160 :width normal :foundry "nil" :family "Menlo"))))
-      '(cursor ((t (:background "MediumPurple1")))))
-
-     ;; Ensure that the exec path has all my env goodies
-     (when (memq window-system '(mac ns x))
-       (exec-path-from-shell-initialize))
-
-     ;; Magit
-     (global-set-key (kbd "\C-x g") 'magit-status)
-
-     ;; ORG
-     (require 'org-install)
-     (global-set-key "\C-cl" 'org-store-link)
-     (global-set-key "\C-ca" 'org-agenda)
-     (global-set-key "\C-cc" 'org-capture)
-     (global-set-key "\C-cb" 'org-switchb)
-     (eval-after-load "org"
-       '(progn
-	  (define-prefix-command 'org-todo-state-map)
-	  (define-key org-mode-map "\C-cx" 'org-todo-state-map)
-	  (define-key org-todo-state-map "x" #'(lambda nil (interactive) (org-todo "CANCELLED")))
-	  (define-key org-todo-state-map "d" #'(lambda nil (interactive) (org-todo "DONE")))
-	  (define-key org-todo-state-map "f" #'(lambda nil (interactive) (org-todo "DEFERRED")))
-	  (define-key org-todo-state-map "l" #'(lambda nil (interactive) (org-todo "DELEGATED")))
-	  (define-key org-todo-state-map "s" #'(lambda nil (interactive) (org-todo "STARTED")))
-	  (define-key org-todo-state-map "w" #'(lambda nil (interactive) (org-todo "WAITING")))
-	  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-	  (org-babel-do-load-languages
-	   'org-babel-load-languages
-	   '((shell . t)
-	     (ruby . t)))))
-   #+end_src
