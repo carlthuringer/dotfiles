@@ -39,8 +39,6 @@ function mtg {
            --no-warnings > $(basename ${filename} .mov).gif
 }
 
-GPG_TTY=$(tty)
-
 # Enable using GnuPG Agent as SSH agent
 export GPG_TTY="$(tty)"
 export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
