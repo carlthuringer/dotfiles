@@ -1026,6 +1026,47 @@
      (add-to-list 'auto-mode-alist '("/bin/" . sh-mode))
    #+END_SRC
 
+** Typescript, Node
+
+   Typescript is supported by [[https://github.com/ananthakumaran/tide][Tide Mode]].
+
+   #+begin_src elisp
+     (use-package add-node-modules-path
+       :ensure t
+       :hook typescript-mode
+       :config (setq typescript-indent-level 2)
+     (use-package tide
+       :ensure t
+       :after (typescript-mode company flycheck add-node-modules-path)
+       :hook ((typescript-mode . tide-setup)
+              (typescript-mode . tide-hl-identifier-mode)))
+     (use-package prettier-js
+       :ensure t
+       :hook ((typescript-mode . prettier-js-mode))
+       :config (setq prettier-js-args
+                     '("--single-quote" "--trailing-comma" "all" "--no-semi")))
+   #+end_src
+
+** YAML
+
+   YAML shows up all over the place...
+
+   #+begin_src elisp
+     (use-package yaml-mode
+       :ensure t
+       :mode "\\.yml\\'")
+   #+end_src
+
+** Ruby
+
+   Set up the enhanced ruby mode.
+
+   #+begin_src elisp
+     (use-package enh-ruby-mode
+       :ensure t
+       :mode "\\.rb\\'")
+   #+end_src
+
 * Tools
 ** Git
 
