@@ -654,22 +654,6 @@
     #+END_SRC
 
 ** Backup
-   Settings
-
-   This setting moves all backup files to a central location.
-   Got it from [[http://whattheemacsd.com/init.el-02.html][this page]]. But I don't want to use backups anymore.
-
-   #+BEGIN_SRC elisp :tangle no
-     (setq backup-directory-alist
-           `(("." . ,(expand-file-name
-                      (ha/emacs-subdirectory "backups")))))
-   #+END_SRC
-
-   Tramp should do the same:
-   #+BEGIN_SRC elisp
-     (setq tramp-backup-directory-alist backup-directory-alist)
-   #+END_SRC
-
    Do not make backups of files
    #+BEGIN_SRC elisp
      (setq vc-make-backup-files nil
@@ -687,6 +671,13 @@
 
      (add-hook 'focus-out-hook 'save-all)
    #+END_SRC
+
+   Hydra is useful for some packages that have a complex sequence UI,
+   like dap-mode and debugging.
+
+   #+begin_src elisp
+     (use-package hydra :ensure t)
+   #+end_src
 
 * Miscellaneous Settings
 
@@ -1017,6 +1008,13 @@
         :config
         (add-hook 'compilation-filter-hook 'colorize-compilation-buffer))
     #+end_src
+** Debugging
+
+   So I found this pretty awesome thing called [[https://github.com/emacs-lsp/dap-mode][Dap Mode]] that seems to
+   promise that it will enable my emacs to act like a real
+   IDE. There's also the LSP mode, which might also be neat, but I
+   haven't dug into it yet. For now, let's configure dap-mode.
+
 ** Shell Scripts
 
    Files in my =bin= directory (but /only/ if it doesn't have any
@@ -1034,7 +1032,7 @@
      (use-package add-node-modules-path
        :ensure t
        :hook typescript-mode
-       :config (setq typescript-indent-level 2)
+       :config (setq typescript-indent-level 2))
      (use-package tide
        :ensure t
        :after (typescript-mode company flycheck add-node-modules-path)
@@ -1062,9 +1060,15 @@
    Set up the enhanced ruby mode.
 
    #+begin_src elisp
-     (use-package enh-ruby-mode
+     (use-package dap-mode
        :ensure t
-       :mode "\\.rb\\'")
+       :no-require t)
+     (use-package enh-ruby-mode
+       :after dap-mode
+       :ensure t
+       :mode "\\.rb\\'"
+       :config (require 'dap-ruby))
+
    #+end_src
 
 * Tools
