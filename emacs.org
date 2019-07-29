@@ -1015,6 +1015,95 @@
    IDE. There's also the LSP mode, which might also be neat, but I
    haven't dug into it yet. For now, let's configure dap-mode.
 
+   #+begin_src elisp
+     ;; Define some useful functions
+
+     (defun ct/window-visible (b-name)
+       "Return whether B-NAME is visible."
+       (-> (-compose 'buffer-name 'window-buffer)
+           (-map (window-list))
+           (-contains? b-name)))
+
+     (defun ct/show-debug-windows (session)
+       "Show debug windows."
+       (let ((lsp--cur-workspace (dap--debug-session-workspace session)))
+         (save-excursion
+           ;; display locals
+           (unless (ct/window-visible dap-ui--locals-buffer)
+             (dap-ui-locals))
+           ;; display sessions
+           (unless (ct/window-visible dap-ui--sessions-buffer)
+             (dap-ui-sessions)))))
+
+     (defun ct/hide-debug-windows (session)
+       "Hide debug windows when all debug sessions are dead."
+       (unless (-filter 'dap--session-running (dap--get-sessions))
+         (and (get-buffer dap-ui--sessions-buffer)
+              (kill-buffer dap-ui--sessions-buffer))
+         (and (get-buffer dap-ui--locals-buffer)
+              (kill-buffer dap-ui--locals-buffer))))
+
+     (defun ct/enable-dap-modes
+         (dap-mode)
+                (dap-ui-mode))
+
+
+     ;; Then set up dap-mode proper
+
+     (use-package dap-mode
+       :ensure t
+       :no-require t
+       :hook ((dap-stopped . ct/show-debug-windows)
+              (dap-terminated . ct/hide-debug-windows)
+              (dap-session-created . ct/enable-dap-modes))
+       )
+   #+end_src
+
+*** Ruby Debugging
+
+    First we have to configure =dap-mode= to load up when we load our
+    ruby mode in an actual ruby project.
+
+    #+begin_src elisp
+      (use-package enh-ruby-mode
+        :after dap-mode
+        :bind (("C-c d s" . dap-debug)
+               ("C-c d h" . dap-hydra))
+        :hook dap-mode
+        :config (require 'dap-ruby))
+    #+end_src
+
+    Must [[https://github.com/rubyide/vscode-ruby/wiki/1.-Debugger-Installation][install]] some rubygems.
+
+    #+begin_src shell
+      gem install ruby-debug-ide debase
+    #+end_src
+
+    And put them in your Bundle
+
+    #+begin_src ruby
+      gem "ruby-debug-ide"
+      gem "debase"
+    #+end_src
+
+    Create a =.dir-locals.el= file in the project directory with a basic
+    Debugging configuration. The =:useBundler= piece is a secret
+    param. This package is very secret.
+
+    #+begin_src elisp :tangle no
+      (progn
+        (require 'projectile)
+        (let ((project-root (projectile-project-root)))
+          (dap-register-debug-template
+           "Rails::Server"
+           (list :type "Ruby"
+                 :cwd project-root
+                 :request "launch"
+                 :program (concat project-root "/bin/rails")
+                 :args '("server")
+                 :useBundler t))))
+    #+end_src
+
 ** Shell Scripts
 
    Files in my =bin= directory (but /only/ if it doesn't have any
@@ -1060,15 +1149,9 @@
    Set up the enhanced ruby mode.
 
    #+begin_src elisp
-     (use-package dap-mode
-       :ensure t
-       :no-require t)
      (use-package enh-ruby-mode
-       :after dap-mode
        :ensure t
-       :mode "\\.rb\\'"
-       :config (require 'dap-ruby))
-
+       :mode "\\.rb\\'")
    #+end_src
 
 * Tools
