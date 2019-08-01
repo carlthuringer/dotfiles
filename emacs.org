@@ -208,6 +208,11 @@
        (toggle-read-only))
      (add-hook 'compilation-filter-hook 'ct/colorize-compilation-buffer)
    #+END_SRC
+
+* Basic UI
+
+  This section covers UI customizations that make emacs easier to use.
+
 * Package Manager
 
   We're going to just use the built-in emacs package manager. I had
@@ -217,8 +222,23 @@
   the particulars of the use-package format. First a list of packages.
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '(org
-                          auto-package-update) "Default Packages")
+    (defvar ct/packages '(
+			  add-node-modules-path
+			  auto-package-update
+			  apib-mode
+			  beacon
+			  counsel
+			  exec-path-from-shell
+			  flx
+			  flycheck
+			  ivy
+			  magit
+			  prettier-js
+			  projectile
+			  tide
+			  org
+			  which-key
+			  ) "Default Packages")
   #+END_SRC
 
   Some packages need to be pinned. For example, I want org to always
@@ -257,15 +277,73 @@
      (require 'auto-package-update)
      (auto-package-update-maybe)
    #+END_SRC
+** Exec Path
 
-* Fill Mode
+   This would normally be in the earlier environment setup but I have
+   to wait until the packages are installed.
 
-  This is the first annoyance that I find when I'm writing in Org. I
-  really like it to automatically wrap my columns and indent for me,
-  but org doesn't do that for me. As a remedy for constantly needing
-  to hit =M-q= I can use Fill Mode instead.
+   #+begin_src elisp
+     (when (memq window-system '(mac ns x))
+       (exec-path-from-shell-initialize))
+   #+end_src
+
+* Fancy Package-enhanced UI
+
+  This section involves package-based UI improvements.
+
+** Ace-switcher
+
+   [[https://github.com/abo-abo/ace-window][Ace]] provides clever shortcuts to switch windows, an improvement
+   over constantly using =C-x o= to cycle around. I've already learned
+   to use =C-x o= so let's remap that to ace-window.
+
+   #+begin_src elisp
+     (global-set-key (kbd "C-x o") 'ace-window)
+     (setq aw-keys '(?h ?j ?k ?l ?a ?s ?d ?f))
+   #+end_src
+
+
+** Ivy
+
+   Well, I was going to configure IDO to have vertical and cooler
+   matching and... actually if I have to install packages for IDO to
+   make it awesome, then I'm just going to switch to [[https://github.com/abo-abo/swiper][Ivy]]. ... Ivy is
+   awesome. But to make it moreso I should still use the [[https://github.com/lewang/flx][flx]] package
+   and set the fuzzy regex mode up.
+
+   #+begin_src elisp
+     (ivy-mode 1)
+     (counsel-mode 1)
+     (setq ivy-use-virtual-buffers t
+	   enable-recursive-minibuffers t
+	   ivy-re-builders-alist
+	   '((swiper . ivy--regex-plus)
+	     (t . ivy--regex-fuzzy))
+	   )
+     (global-set-key (kbd "\C-s") 'swiper)
+     (global-set-key (kbd "\C-x d") 'counsel-dired)
+   #+end_src
+
+** Beacon
+
+   I am always having a hard time finding my cursor after switching
+   windows. [[https://github.com/Malabarba/beacon][Beacon]] makes this easier by flashing my cursor's landing
+   position.
+
+   #+begin_src elisp
+     (beacon-mode 1)
+   #+end_src
+
+** Which Key
+
+   I can't remember all these keystrokes. Remind me please.
+
+   #+begin_src elisp
+     (which-key-mode 1)
+   #+end_src
 
 * Org Mode
+
 
   I love org mode. It's so neat. Organize all the things.
 
@@ -320,6 +398,10 @@
      (setq org-src-fontify-natively t ;; Fontifies src blocks
 	   org-src-tab-acts-natively t ;; Make tab work even when we are not in the edit mode
 	   org-confirm-babel-evaluate nil) ;; Don't ask me every time if I want to eval.
+     (org-babel-do-load-languages
+      'org-babel-load-languages
+      '((emacs-lisp . t)
+	(shell . t)))
    #+end_src
 
 ** GTD
@@ -360,4 +442,94 @@
      (global-set-key (kbd "C-c c") 'org-capture)
      (global-set-key (kbd "C-c a") 'org-agenda)
      (org-defkey org-mode-map (kbd "C-c ,") 'org-time-stamp-inactive) ;; C-c . already puts in an active time stamp, this one lets me do an inactive one.
+   #+end_src
+
+* Programming
+
+  This section handles programming-specific enhancements to emacs.
+
+** User Interface
+
+   When programming mode is on, show me line numbers.
+
+   #+begin_src elisp
+     (add-hook 'prog-mode-hook 'linum-mode)
+   #+end_src
+** Source Control
+
+   I super duper like =magit= for all my git needs.
+
+   #+begin_src elisp
+     (require 'magit)
+     (global-set-key (kbd "C-x g") 'magit-status)
+   #+end_src
+
+** Projects
+
+   The =projectile= is pretty good for basic project navigation needs.
+
+   #+begin_src elisp
+     (projectile-mode +1)
+     (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
+     (setq projectile-switch-project-action 'projectile-commander ;; When we switch project, open the commander
+	   projectile-completion-system 'ivy
+	   )
+     (def-projectile-commander-method ?s
+       "Open a *eshell* buffer for the project."
+       (projectile-run-eshell))
+   #+end_src
+
+** Flycheck
+
+   Flycheck is a pluggable syntax checker and a replacement for
+   flymake.
+
+** Completion
+
+   Autocompletion is super handy when working in big projects.
+
+   #+begin_src elisp
+     (add-hook 'typescript-mode-hook 'company-mode)
+   #+end_src
+
+** Typescript
+
+   Getting Typescript to work really well takes some packages. I end
+   up using =tide-mode=, =prettier-js-mode= and =flycheck=
+
+   #+begin_src elisp
+     (require 'nvm)
+
+     (setq typescript-indent-level 2
+	   prettier-js-args
+	   '("--single-quote" "--trailing-comma" "all" "--no-semi"))
+
+     (defun ct/setup-typescript ()
+       (progn (nvm-use-for (projectile-project-root))
+;;	      (exec-path-from-shell-copy-env "PATH")
+	      (add-node-modules-path)
+	      (tide-setup)
+	      (tide-hl-identifier-mode)
+	      (company-mode)
+	      (flycheck-mode)
+	      (prettier-js-mode)
+	      ))
+
+     (add-hook 'typescript-mode-hook 'ct/setup-typescript)
+   #+end_src
+
+** API Blueprint
+
+   The [[https://apiblueprint.org/documentation/specification.html][Api Blueprint]] Format is designed to facilitate precise
+   specification of restful apis.
+
+   The =apib-mode= requires =drafter= to be installed.
+
+   #+begin_src shell
+     brew install drafter
+   #+end_src
+
+   #+begin_src elisp
+     (require 'apib-mode)
+     (add-to-list 'auto-mode-alist '("\\.apib\\'" . apib-mode))
    #+end_src
