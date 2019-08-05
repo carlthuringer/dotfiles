@@ -233,7 +233,7 @@
 			  flycheck
 			  ivy
 			  magit
-			  prettier-js
+			  ;; prettier-js
 			  projectile
 			  tide
 			  org
