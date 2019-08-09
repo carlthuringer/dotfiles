@@ -179,11 +179,13 @@
      (setq column-number-mode t)
    #+END_SRC
 
-   And finally set a nice dark theme.
+   Set a nice dark theme.
 
    #+BEGIN_SRC elisp
      (load-theme 'misterioso t)
    #+END_SRC
+
+
 
 ** Key Bindings
 
@@ -209,6 +211,7 @@
      (add-hook 'compilation-filter-hook 'ct/colorize-compilation-buffer)
    #+END_SRC
 
+
 * Basic UI
 
   This section covers UI customizations that make emacs easier to use.
@@ -222,23 +225,23 @@
   the particulars of the use-package format. First a list of packages.
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '(
-			  add-node-modules-path
-			  auto-package-update
-			  apib-mode
-			  beacon
-			  counsel
-			  exec-path-from-shell
-			  flx
-			  flycheck
-			  ivy
-			  magit
-			  prettier-js
-			  projectile
-			  tide
-			  org
-			  which-key
-			  ) "Default Packages")
+    (defvar ct/packages '() "Carl's Installed Packages")
+    (set 'ct/packages '())
+    (add-to-list 'ct/packages 'add-node-modules-path t)
+    (add-to-list 'ct/packages 'auto-package-update t)
+    (add-to-list 'ct/packages 'apib-mode t)
+    (add-to-list 'ct/packages 'beacon t)
+    (add-to-list 'ct/packages 'counsel t)
+    (add-to-list 'ct/packages 'exec-path-from-shell t)
+    (add-to-list 'ct/packages 'flx t)
+    (add-to-list 'ct/packages 'flycheck t)
+    (add-to-list 'ct/packages 'ivy t)
+    (add-to-list 'ct/packages 'magit t)
+    (add-to-list 'ct/packages 'prettier-js t)
+    (add-to-list 'ct/packages 'projectile t)
+    (add-to-list 'ct/packages 'tide t)
+    (add-to-list 'ct/packages 'org t)
+    (add-to-list 'ct/packages 'which-key t)
   #+END_SRC
 
   Some packages need to be pinned. For example, I want org to always
@@ -274,8 +277,10 @@
 ** Auto Package Updates
 
    #+BEGIN_SRC elisp
-     (require 'auto-package-update)
-     (auto-package-update-maybe)
+     (add-hook 'kill-emacs-hook (lambda ()
+				  (progn (require 'auto-package-update)
+					 (auto-package-update-maybe))))
+
    #+END_SRC
 ** Exec Path
 
@@ -498,22 +503,21 @@
    up using =tide-mode=, =prettier-js-mode= and =flycheck=
 
    #+begin_src elisp
-     (require 'nvm)
-
      (setq typescript-indent-level 2
 	   prettier-js-args
 	   '("--single-quote" "--trailing-comma" "all" "--no-semi"))
 
      (defun ct/setup-typescript ()
-       (progn (nvm-use-for (projectile-project-root))
-;;	      (exec-path-from-shell-copy-env "PATH")
-	      (add-node-modules-path)
-	      (tide-setup)
-	      (tide-hl-identifier-mode)
-	      (company-mode)
-	      (flycheck-mode)
-	      (prettier-js-mode)
-	      ))
+       (progn
+	 (require 'nvm)
+	 (nvm-use-for (projectile-project-root))
+	 (add-node-modules-path)
+	 (tide-setup)
+	 (tide-hl-identifier-mode)
+	 (company-mode)
+	 (flycheck-mode)
+	 (prettier-js-mode)
+	 ))
 
      (add-hook 'typescript-mode-hook 'ct/setup-typescript)
    #+end_src
@@ -530,6 +534,6 @@
    #+end_src
 
    #+begin_src elisp
-     (require 'apib-mode)
-     (add-to-list 'auto-mode-alist '("\\.apib\\'" . apib-mode))
+     (autoload 'apib-mode "apib-mode" "Api Blueprint Mode" t)
+     (add-to-list 'auto-mode-alist '("\\.apib\\'" . 'apib-mode))
    #+end_src
