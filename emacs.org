@@ -216,6 +216,14 @@
 
   This section covers UI customizations that make emacs easier to use.
 
+  Make the cursor and region highlight way more
+  visible.
+
+  #+begin_src elisp
+    (set-face-background 'cursor "DarkOrange3")
+    (set-face-background 'region "MediumPurple2")
+  #+end_src
+
 * Package Manager
 
   We're going to just use the built-in emacs package manager. I had
@@ -235,10 +243,13 @@
     (add-to-list 'ct/packages 'exec-path-from-shell t)
     (add-to-list 'ct/packages 'flx t)
     (add-to-list 'ct/packages 'flycheck t)
+    (add-to-list 'ct/packages 'inf-ruby t)
     (add-to-list 'ct/packages 'ivy t)
     (add-to-list 'ct/packages 'magit t)
     (add-to-list 'ct/packages 'prettier-js t)
     (add-to-list 'ct/packages 'projectile t)
+    (add-to-list 'ct/packages 'robe t)
+    (add-to-list 'ct/packages 'rubocopfmt t)
     (add-to-list 'ct/packages 'tide t)
     (add-to-list 'ct/packages 'org t)
     (add-to-list 'ct/packages 'which-key t)
@@ -536,4 +547,42 @@
    #+begin_src elisp
      (autoload 'apib-mode "apib-mode" "Api Blueprint Mode" t)
      (add-to-list 'auto-mode-alist '("\\.apib\\'" . 'apib-mode))
+   #+end_src
+
+** Ruby
+
+   A fun programming language. Robe mode enables some code lookup and
+   documentation inline. You must have =pry= and =pry-doc= installed.
+
+   #+begin_src elisp
+     (autoload 'robe-mode "robe")
+     (add-hook 'ruby-mode-hook 'robe-mode)
+   #+end_src
+
+   I want to have Rubocop checking and formatting my code.
+
+   #+begin_src elisp
+     (add-hook 'ruby-mode-hook 'flycheck-mode)
+     (autoload 'rubocopfmt-mode "rubocopfmt")
+     (add-hook 'ruby-mode-hook 'rubocopfmt-mode)
+   #+end_src
+
+   And let's add the robe company backend and company autocompletion
+
+   #+begin_src elisp
+     (eval-after-load 'company
+       '(push 'company-robe company-backends))
+     (add-hook 'ruby-mode-hook 'company-mode)
+   #+end_src
+
+* Writing
+
+
+** Markdown
+
+   When writing in markdown mode, set auto-fill-mode so that my lines
+   get automatically wrapped.
+
+   #+begin_src elisp
+     (add-hook 'markdown-mode-hook 'auto-fill-mode)
    #+end_src
