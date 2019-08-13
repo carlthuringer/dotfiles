@@ -138,7 +138,7 @@
        (interactive)
        (save-some-buffers t))
 
-     (add-hook 'focus-out-hook 'ct/save-all)
+     (add-function :after after-focus-change-function #'ct/save-all)
    #+END_SRC
 
    Strip whitespace on save.
@@ -205,9 +205,10 @@
    #+BEGIN_SRC elisp
      (require 'ansi-color)
      (defun ct/colorize-compilation-buffer ()
-       (toggle-read-only)
+       "Handle ANSI color codes in compilation buffers."
+       (read-only-mode 'toggle)
        (ansi-color-apply-on-region (point-min) (point-max))
-       (toggle-read-only))
+       (read-only-mode 'toggle))
      (add-hook 'compilation-filter-hook 'ct/colorize-compilation-buffer)
    #+END_SRC
 
@@ -233,7 +234,7 @@
   the particulars of the use-package format. First a list of packages.
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '() "Carl's Installed Packages")
+    (defvar ct/packages '() "Carl's Installed Packages.")
     (set 'ct/packages '())
     (add-to-list 'ct/packages 'add-node-modules-path t)
     (add-to-list 'ct/packages 'auto-package-update t)
@@ -274,6 +275,7 @@
 
     ;; Thank you, abedra.
     (defun abedra/packages-installed-p ()
+      "Check if packages are installed."
       (cl-loop for pkg in ct/packages
 	    when (not (package-installed-p pkg)) do (cl-return nil)
 	    finally (cl-return t)))
@@ -519,6 +521,7 @@
 	   '("--single-quote" "--trailing-comma" "all" "--no-semi"))
 
      (defun ct/setup-typescript ()
+       "Sets up typescript."
        (progn
 	 (require 'nvm)
 	 (nvm-use-for (projectile-project-root))
@@ -562,7 +565,13 @@
    I want to have Rubocop checking and formatting my code.
 
    #+begin_src elisp
-     (add-hook 'ruby-mode-hook 'flycheck-mode)
+     (defun ct/ruby-flycheck-setup ()
+       (let ((rubocop-path (concat (projectile-project-root) "bin/rubocop")))
+	    (if (file-exists-p rubocop-path)
+		(setq flycheck-ruby-rubocop-executable rubocop-path)
+	      (setq flycheck-ruby-rubocop-executable nil))
+       (flycheck-mode 1)))
+     (add-hook 'ruby-mode-hook 'ct/ruby-flycheck-setup)
      (autoload 'rubocopfmt-mode "rubocopfmt")
      (add-hook 'ruby-mode-hook 'rubocopfmt-mode)
    #+end_src
