@@ -130,6 +130,13 @@
 	  make-backup-files nil)
   #+END_SRC
 
+  I do not want emacs to save customizations, let's redirect the
+  custom file to dev null
+
+  #+begin_src elisp
+    (setq custom-file "/dev/null")
+  #+end_src
+
   I do like auto-save on lost focus.
 
    #+BEGIN_SRC elisp
