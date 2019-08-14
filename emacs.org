@@ -254,7 +254,6 @@
     (add-to-list 'ct/packages 'inf-ruby t)
     (add-to-list 'ct/packages 'ivy t)
     (add-to-list 'ct/packages 'magit t)
-    (add-to-list 'ct/packages 'prettier-js t)
     (add-to-list 'ct/packages 'projectile t)
     (add-to-list 'ct/packages 'robe t)
     (add-to-list 'ct/packages 'rubocopfmt t)
