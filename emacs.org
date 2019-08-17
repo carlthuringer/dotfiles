@@ -1,12 +1,8 @@
 #+TITLE: Emacs Configuration File
 #+AUTHOR: Carl Thuringer
 #+DESCRIPTION: A literate programming version of the Emacs Initialization Script, bootstrapped by the .emacs file.
-#+PROPERTY:    header-args:elisp  :tangle ~/.emacs.d/elisp/init-main.el
+#+PROPERTY:    header-args:elisp  :tangle ~/.emacs.d/init-main.el
 #+PROPERTY:    header-args:shell  :tangle no
-#+PROPERTY:    header-args        :results silent :eval no-export :comments org
-#+OPTIONS:     num:nil toc:nil todo:nil tasks:nil tags:nil
-#+OPTIONS:     skip:nil author:nil email:nil creator:nil timestamp:nil
-#+INFOJS_OPT:  view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
 
 * Introduction
 
@@ -65,7 +61,7 @@
    #+begin_src elisp :tangle no
      ;; Load our Literate Programming version of our Dot Emacs file from
      ;; our dotfiles repo.
-     (load-file "~/.emacs.d/elisp/init-main.el")
+     (load-file "~/.emacs.d/init-main.el")
      (server-start)
    #+end_src
 
