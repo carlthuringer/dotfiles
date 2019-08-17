@@ -234,6 +234,12 @@
 
 * Package Manager
 
+  To start off, let's use =package.el=
+
+  #+BEGIN_SRC elisp
+    (require 'package)
+  #+END_SRC
+
   We're going to just use the built-in emacs package manager. I had
   been using jweigley's =use-package= for a little while, but every
   time I have to do something with it I have to look it up, and do
@@ -273,7 +279,6 @@
   Then set up the package manager.
 
   #+BEGIN_SRC elisp
-    (require 'package)
     (add-to-list 'package-archives
 		 '("org" . "https://orgmode.org/elpa/") t)
     (add-to-list 'package-archives
