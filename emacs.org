@@ -137,6 +137,13 @@
     (setq custom-file "/dev/null")
   #+end_src
 
+  When reading =dir-locals=, trust the safe values and don't prompt me
+  for them.
+
+  #+begin_src elisp
+    (setq enable-local-variables :safe)
+  #+end_src
+
   I do like auto-save on lost focus.
 
    #+BEGIN_SRC elisp
