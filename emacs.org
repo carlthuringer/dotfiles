@@ -54,15 +54,21 @@
    Now rename or remove the old =.emacs= and =.emacs.d/= and get ready to
    learn how fun it is to use vanilla emacs.
 
-** Loading this file.
+** Initialization...
 
-   To "load" the contents of this file, add the following to =$HOME/.emacs=:
+   Set up the =init.el= and =early-init.el= files in the =~/.emacs.d= directory.
 
+   #+NAME: init.el
    #+begin_src elisp :tangle no
      ;; Load our Literate Programming version of our Dot Emacs file from
      ;; our dotfiles repo.
      (load-file "~/.emacs.d/init-main.el")
      (server-start)
+   #+end_src
+
+   #+Name: early-init.el
+   #+begin_src elisp :tangle no
+     (setq package-quickstart t)
    #+end_src
 
    But how do we actually, you know, use this file?  First of all you
@@ -250,8 +256,9 @@
   the particulars of the use-package format. First a list of packages.
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '() "Carl's Installed Packages.")
+    (defvar ct/packages '() "Carl's Installed
     (set 'ct/packages '())
+    (add-to-list 'ct/packages 'ace-window t)
     (add-to-list 'ct/packages 'add-node-modules-path t)
     (add-to-list 'ct/packages 'auto-package-update t)
     (add-to-list 'ct/packages 'apib-mode t)
@@ -303,10 +310,14 @@
   #+END_SRC
 ** Auto Package Updates
 
+   Automatically update packages and also refresh the package
+   quickstart.
+
    #+BEGIN_SRC elisp
      (add-hook 'kill-emacs-hook (lambda ()
 				  (progn (require 'auto-package-update)
-					 (auto-package-update-maybe))))
+					 (auto-package-update-maybe)
+					 (package-quickstart-refresh)))
 
    #+END_SRC
 ** Exec Path
