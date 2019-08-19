@@ -545,6 +545,7 @@
 	 (company-mode)
 	 (flycheck-mode)
 	 (prettier-js-mode)
+	 (define-key typescript-mode-map (kbd "C-c , v") 'mocha-test-file)
 	 ))
 
      (add-hook 'typescript-mode-hook 'ct/setup-typescript)
