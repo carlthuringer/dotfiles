@@ -243,20 +243,16 @@
 
 * Package Manager
 
-  To start off, let's use =package.el=
-
-  #+BEGIN_SRC elisp
-    (require 'package)
-  #+END_SRC
-
   We're going to just use the built-in emacs package manager. I had
   been using jweigley's =use-package= for a little while, but every
   time I have to do something with it I have to look it up, and do
   mental transformation from whatever example I'm reading from into
-  the particulars of the use-package format. First a list of packages.
+  the particulars of the use-package format. The following is all one
+  block because it is way easier to edit and then C-c C-c it..
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '() "Carl's Installed
+    (require 'package)
+    (defvar ct/packages '() "Carl's Installed Packages.")
     (set 'ct/packages '())
     (add-to-list 'ct/packages 'ace-window t)
     (add-to-list 'ct/packages 'add-node-modules-path t)
@@ -273,22 +269,19 @@
     (add-to-list 'ct/packages 'projectile t)
     (add-to-list 'ct/packages 'robe t)
     (add-to-list 'ct/packages 'rubocopfmt t)
+    (add-to-list 'ct/packages 'ten-hundred-mode t)
     (add-to-list 'ct/packages 'tide t)
     (add-to-list 'ct/packages 'org t)
     (add-to-list 'ct/packages 'which-key t)
-  #+END_SRC
 
-  Some packages need to be pinned. For example, I want org to always
-  come form the org elpa, not the gnu one.
+    ;;  Some packages need to be pinned. For example, I want org to always
+    ;;  come form the org elpa, not the gnu one.
 
-  #+BEGIN_SRC elisp
     (add-to-list 'package-pinned-packages
 		 '("org" . "org") t)
-  #+END_SRC
 
-  Then set up the package manager.
+    ;;Then set up the package manager.
 
-  #+BEGIN_SRC elisp
     (add-to-list 'package-archives
 		 '("org" . "https://orgmode.org/elpa/") t)
     (add-to-list 'package-archives
@@ -298,8 +291,8 @@
     (defun abedra/packages-installed-p ()
       "Check if packages are installed."
       (cl-loop for pkg in ct/packages
-	    when (not (package-installed-p pkg)) do (cl-return nil)
-	    finally (cl-return t)))
+	       when (not (package-installed-p pkg)) do (cl-return nil)
+	       finally (cl-return t)))
 
     (unless (abedra/packages-installed-p)
       (message "%s" "Refreshing package database...")
@@ -308,6 +301,9 @@
 	(when (not (package-installed-p pkg))
 	  (package-install pkg))))
   #+END_SRC
+
+  #+RESULTS:
+
 ** Auto Package Updates
 
    Automatically update packages and also refresh the package
@@ -611,8 +607,6 @@
    #+end_src
 
 * Writing
-
-
 ** Markdown
 
    When writing in markdown mode, set auto-fill-mode so that my lines
