@@ -243,17 +243,12 @@
 
 * Package Manager
 
-  To start off, let's use =package.el=
-
-  #+BEGIN_SRC elisp
-    (require 'package)
-  #+END_SRC
-
   We're going to just use the built-in emacs package manager. I had
   been using jweigley's =use-package= for a little while, but every
   time I have to do something with it I have to look it up, and do
   mental transformation from whatever example I'm reading from into
-  the particulars of the use-package format. First a list of packages.
+  the particulars of the use-package format. The following is all one
+  block because it is way easier to edit and then C-c C-c it..
 
   #+BEGIN_SRC elisp
     (defvar ct/packages '() "Carl's Installed Packages.")
@@ -277,6 +272,7 @@
     (add-to-list 'ct/packages 'robe t)
     (add-to-list 'ct/packages 'rspec-mode t)
     (add-to-list 'ct/packages 'rubocopfmt t)
+    (add-to-list 'ct/packages 'ten-hundred-mode t)
     (add-to-list 'ct/packages 'tide t)
     (add-to-list 'ct/packages 'org t)
     (add-to-list 'ct/packages 'which-key t)
@@ -308,6 +304,9 @@
 	(when (not (package-installed-p pkg))
 	  (package-install pkg))))
   #+END_SRC
+
+  #+RESULTS:
+
 ** Auto Package Updates
 
    Automatically update packages and also refresh the package
@@ -622,8 +621,6 @@
    #+end_src
 
 * Writing
-
-
 ** Markdown
 
    When writing in markdown mode, set auto-fill-mode so that my lines
