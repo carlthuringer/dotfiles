@@ -1,7 +1,7 @@
 #+TITLE: Emacs Configuration File
 #+AUTHOR: Carl Thuringer
 #+DESCRIPTION: A literate programming version of the Emacs Initialization Script, bootstrapped by the .emacs file.
-#+PROPERTY:    header-args:elisp  :tangle ~/.emacs.d/init-main.el
+#+PROPERTY:    header-args:elisp  :tangle ~/.emacs.d/init-main.el :results silent
 #+PROPERTY:    header-args:shell  :tangle no
 
 * Introduction
@@ -256,13 +256,14 @@
   the particulars of the use-package format. First a list of packages.
 
   #+BEGIN_SRC elisp
-    (defvar ct/packages '() "Carl's Installed
+    (defvar ct/packages '() "Carl's Installed Packages.")
     (set 'ct/packages '())
     (add-to-list 'ct/packages 'ace-window t)
     (add-to-list 'ct/packages 'add-node-modules-path t)
     (add-to-list 'ct/packages 'auto-package-update t)
     (add-to-list 'ct/packages 'apib-mode t)
     (add-to-list 'ct/packages 'beacon t)
+    (add-to-list 'ct/packages 'company t)
     (add-to-list 'ct/packages 'counsel t)
     (add-to-list 'ct/packages 'exec-path-from-shell t)
     (add-to-list 'ct/packages 'flx t)
@@ -270,25 +271,24 @@
     (add-to-list 'ct/packages 'inf-ruby t)
     (add-to-list 'ct/packages 'ivy t)
     (add-to-list 'ct/packages 'magit t)
+    (add-to-list 'ct/packages 'plantuml-mode t)
     (add-to-list 'ct/packages 'projectile t)
+    (add-to-list 'ct/packages 'rbenv t)
     (add-to-list 'ct/packages 'robe t)
+    (add-to-list 'ct/packages 'rspec-mode t)
     (add-to-list 'ct/packages 'rubocopfmt t)
     (add-to-list 'ct/packages 'tide t)
     (add-to-list 'ct/packages 'org t)
     (add-to-list 'ct/packages 'which-key t)
-  #+END_SRC
+    (add-to-list 'ct/packages 'yaml-mode t)
+    ;;  Some packages need to be pinned. For example, I want org to always
+    ;;  come form the org elpa, not the gnu one.
 
-  Some packages need to be pinned. For example, I want org to always
-  come form the org elpa, not the gnu one.
-
-  #+BEGIN_SRC elisp
     (add-to-list 'package-pinned-packages
 		 '("org" . "org") t)
-  #+END_SRC
 
-  Then set up the package manager.
+    ;; Then set up the package manager.
 
-  #+BEGIN_SRC elisp
     (add-to-list 'package-archives
 		 '("org" . "https://orgmode.org/elpa/") t)
     (add-to-list 'package-archives
@@ -298,8 +298,8 @@
     (defun abedra/packages-installed-p ()
       "Check if packages are installed."
       (cl-loop for pkg in ct/packages
-	    when (not (package-installed-p pkg)) do (cl-return nil)
-	    finally (cl-return t)))
+	       when (not (package-installed-p pkg)) do (cl-return nil)
+	       finally (cl-return t)))
 
     (unless (abedra/packages-installed-p)
       (message "%s" "Refreshing package database...")
@@ -317,7 +317,7 @@
      (add-hook 'kill-emacs-hook (lambda ()
 				  (progn (require 'auto-package-update)
 					 (auto-package-update-maybe)
-					 (package-quickstart-refresh)))
+					 (package-quickstart-refresh))))
 
    #+END_SRC
 ** Exec Path
@@ -438,13 +438,14 @@
    simpler.
 
    #+begin_src elisp
-     (setq org-src-fontify-natively t ;; Fontifies src blocks
-	   org-src-tab-acts-natively t ;; Make tab work even when we are not in the edit mode
-	   org-confirm-babel-evaluate nil) ;; Don't ask me every time if I want to eval.
-     (org-babel-do-load-languages
-      'org-babel-load-languages
-      '((emacs-lisp . t)
-	(shell . t)))
+	  (setq org-src-fontify-natively t ;; Fontifies src blocks
+		org-src-tab-acts-natively t ;; Make tab work even when we are not in the edit mode
+		org-confirm-babel-evaluate nil) ;; Don't ask me every time if I want to eval.
+	  (org-babel-do-load-languages
+	   'org-babel-load-languages
+	   '((emacs-lisp . t)
+	     (shell . t)
+	     (plantuml . t)))
    #+end_src
 
 ** GTD
@@ -608,6 +609,16 @@
      (eval-after-load 'company
        '(push 'company-robe company-backends))
      (add-hook 'ruby-mode-hook 'company-mode)
+   #+end_src
+
+** Plantuml
+
+   Let's set up plantuml so that we can use it reliably in emacs.
+
+   #+begin_src elisp
+     (setq plantuml-default-exec-mode 'jar
+	   plantuml-jar-path "/usr/local/opt/plantuml/libexec/plantuml.jar"
+	   org-plantuml-jar-path plantuml-jar-path)
    #+end_src
 
 * Writing
