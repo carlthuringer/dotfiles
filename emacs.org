@@ -472,7 +472,7 @@
 	org-capture-templates
 	'(("t" "Todo" entry
 	   (file+headline "~/org/todo.org" "Tasks")
-	   "* TODO %?")
+	   "* TODO %?\n   SCHEDULED: %t")
 	  ("n" "Notes" entry
 	   (file "~/org/notes.org")
 	   "* %u %?"))
