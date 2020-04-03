@@ -1,4 +1,4 @@
-;;; .emacs --- Emacs setup
+;; .emacs --- Emacs setup
 
 ;;; Commentary:
 ; Emacs setup...
@@ -51,6 +51,9 @@
     (setq use-package-verbose nil
           use-package-expand-minimally t))
 
+  ;; For some reason this cannot be set in use-package.
+  (scroll-bar-mode 0)
+  
   ;; (setq indent-tabs-mode nil
   ;;       standard-indent 2
   ;;       indicate-empty-lines t)
@@ -259,11 +262,6 @@
               ("C-c , , h" . dap-hydra))
   :custom (ruby-insert-encoding-magic-comment nil))
 
-(use-package scroll-bar
-  :demand t
-  ;; Disable scroll bars.
-  :config (scroll-bar-mode 0))
-
 ;; (use-package smart-mode-line
 ;;   :config
 ;;   ;; See https://github.com/Malabarba/smart-mode-line/issues/217
@@ -294,9 +292,9 @@
 ;; (use-package treemacs
 ;;   :bind (("M-0" . treemacs-select-window)))
 
-;; (use-package typescript-mode
-;;   :hook ((typescript-mode . lsp))
-;;   :custom (typescript-indent-level 2))
+(use-package typescript-mode
+  :hook ((typescript-mode . lsp))
+  :custom (typescript-indent-level 2))
 
 (use-package which-key
   :defer 5
@@ -336,12 +334,17 @@
  '(helm-completion-style 'emacs)
  '(lsp-enable-snippet nil)
  '(package-selected-packages
-   '(flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(projectile-mode 1 nil (projectile))
  '(ruby-insert-encoding-magic-comment nil)
- '(scroll-bar-mode 0))
+ '(safe-local-variable-values
+   '((whitespace-line-column . 80)
+     (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
+     (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
+     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+ '(typescript-indent-level 2 t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
