@@ -33,6 +33,7 @@
   (add-to-list 'load-path "~/.emacs.d/lisp/" t)
   ;; Set up package.el the traditional way.
   (require 'package)
+  (package-initialize)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
 
@@ -53,16 +54,8 @@
 
   ;; For some reason this cannot be set in use-package.
   (scroll-bar-mode 0)
-  
-  ;; (setq indent-tabs-mode nil
-  ;;       standard-indent 2
-  ;;       indicate-empty-lines t)
-  ;; (menu-bar-mode 0) ; No Menu bar
-  ;; (scroll-bar-mode 0) ; No scroll bar
-  ;; (show-paren-mode 1) ; Show parens
-  ;; (tool-bar-mode 0)   ; No tool bar
-  
-  ;; (add-hook 'prog-mode-hook #'linum-mode)
+  (menu-bar-mode 0)
+  (tool-bar-mode 0)
   )
 
 ;; Ensure system packages with use-package
@@ -98,6 +91,7 @@
   :config (add-to-list 'company-backends 'company-lsp))
 
 (use-package dap-hydra
+  :after dap-mode
   :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
 
 (use-package dap-mode
@@ -108,6 +102,7 @@
   (tooltip-mode 1))
 
 (use-package dap-ruby
+  :after dap-mode
   :custom (dap-ruby-debug-program '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
   :config
   (dap-ruby-setup))
