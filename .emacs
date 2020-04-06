@@ -110,7 +110,7 @@
 (use-package env
   :after exec-path-from-shell
   :config
-  (setenv "NPM_TOKEN" "ce95665a-d42b-4956-90e0-f18af37c1667")
+  (exec-path-from-shell-copy-env "NPM_TOKEN")
   ;; In order to use ssh-agent with git and gpg, set the ssh auth sock
   (setenv "SSH_AUTH_SOCK"
           (substring
