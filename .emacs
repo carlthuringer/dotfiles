@@ -235,7 +235,6 @@
 ;; (use-package rspec-mode :hook ruby-mode)
 
 (use-package ruby-mode
-  :after (lsp-mode dap-ruby dap-hydra)
   :preface
   (defun my-dap-debug-rspec-at-line ()
     "Debug RSpec at line"
@@ -253,8 +252,8 @@
               ("C-c f" . lsp-format-buffer)
               ("C-c d t" . dap-debug-edit-template)
               ("C-c d d" . dap-debug)
-	      ("C-c , , s" . my-dap-debug-rspec-at-line)
-              ("C-c , , h" . dap-hydra))
+	      ("C-c d h" . dap-hydra)
+	      ("C-c , , s" . my-dap-debug-rspec-at-line))
   :custom (ruby-insert-encoding-magic-comment nil))
 
 ;; (use-package smart-mode-line
