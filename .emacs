@@ -73,9 +73,9 @@
 
 ;; ;; Package Configuration
 
-;; (use-package add-node-modules-path
-;;   :commands add-node-modules-path
-;;   :hook (prettier-js-mode . add-node-modules-path))
+(use-package add-node-modules-path
+  :commands add-node-modules-path
+  :hook (js-mode . add-node-modules-path))
 
 (use-package avy
   :bind* ("C-." . avy-goto-char-timer)
@@ -107,6 +107,10 @@
   :config
   (dap-ruby-setup))
 
+(use-package default-text-scale
+  :demand t
+  :config (default-text-scale-mode))
+
 (use-package env
   :after exec-path-from-shell
   :config
@@ -133,6 +137,7 @@
 
 (use-package fira-code-mode
   :diminish
+  :if (memq window-system '(ns))
   :load-path "lisp"
   :hook (prog-mode . fira-code-mode))
 
@@ -190,10 +195,12 @@
 ;;   :config
 ;;   (ivy-mode 1))
 
-;; (use-package js
-;;   :custom
-;;   (js-indent-level 2))
+(use-package js
+  :custom
+  (js-indent-level 2))
 
+(use-package linum
+  :hook (prog-mode . linum-mode))
 
 (use-package lsp-mode
   :commands lsp
@@ -212,12 +219,10 @@
   :hook ((org-mode . org-indent-mode)
          (org-mode . auto-fill-mode)))
 
-;; (use-package prettier-js
-;;   :after add-node-modules-path
-;;   :hook (typescript-mode . prettier-js-mode))
-
-(use-package linum
-  :hook (prog-mode . linum-mode))
+(use-package prettier-js
+  :after add-node-modules-path
+  :hook ((typescript-mode . prettier-js-mode)
+	 (js-mode . prettier-js-mode)))
 
 (use-package paren
   :demand t
@@ -268,6 +273,10 @@
 ;;   :bind (("C-c <SPC>" . string-inflection-all-cycle)
 ;;          :map ruby-mode-map
 ;;               ("C-c <SPC>" . string-inflection-ruby-style-cycle)))
+
+(use-package select
+  :if (memq window-system '(x))
+  :custom (select-enable-clipboard t))
 
 (use-package solarized-theme
   :demand t
@@ -327,18 +336,20 @@
  '(dap-ruby-debug-program
    '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
  '(helm-completion-style 'emacs)
- '(lsp-enable-snippet nil)
+ '(js-indent-level 2)
+ '(lsp-enable-snippet nil t)
  '(package-selected-packages
-   '(prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(projectile-mode 1 nil (projectile))
- '(ruby-insert-encoding-magic-comment nil)
+ '(ruby-insert-encoding-magic-comment nil t)
  '(safe-local-variable-values
    '((whitespace-line-column . 80)
      (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
      (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+ '(select-enable-clipboard t)
  '(typescript-indent-level 2 t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -346,3 +357,6 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
+(require 'opam-user-setup "~/.emacs.d/lisp/opam-user-setup.el")
+;; ## end of OPAM user-setup addition for emacs / base ## keep this line
