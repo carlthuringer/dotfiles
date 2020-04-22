@@ -135,15 +135,15 @@
   ;; Set my preferred font.
   (set-face-font 'default "Fira Code-14"))
 
+(use-package files
+  :custom (backup-directory-alist `((".*" . ,temporary-file-directory)))
+  (auto-save-file-name-transforms `((".*" ,temporary-file-directory t))))
+
 (use-package fira-code-mode
   :diminish
   :if (memq window-system '(ns))
   :load-path "lisp"
   :hook (prog-mode . fira-code-mode))
-
-;; (use-package flycheck
-;;   :hook ((emacs-lisp-mode . flycheck-mode)
-;;          (lsp-mode . flycheck-mode)))
 
 (use-package graphql-mode
   :mode "\\.graphqls\\'")
@@ -212,6 +212,9 @@
 (use-package magit
   :bind (("C-x g" . magit-status)))
 
+(use-package merlin
+  :hook (reason-mode . merlin-mode))
+
 (use-package minibuffer
   :custom (completion-styles '(flex)))
 
@@ -237,7 +240,11 @@
   (projectile-enable-caching t)
   (projectile-mode 1))
 
-;; (use-package rspec-mode :hook ruby-mode)
+
+
+(use-package refmt
+  :hook (reason-mode . (lambda ()
+			 (add-hook 'before-save-hook #'refmt-before-save))))
 
 (use-package ruby-mode
   :preface
@@ -336,9 +343,9 @@
    '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
  '(helm-completion-style 'emacs)
  '(js-indent-level 2)
- '(lsp-enable-snippet nil t)
+ '(lsp-enable-snippet nil)
  '(package-selected-packages
-   '(nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(projectile-mode 1 nil (projectile))
@@ -357,5 +364,5 @@
  ;; If there is more than one, they won't work right.
  )
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
-(require 'opam-user-setup "~/.emacs.d/lisp/opam-user-setup.el")
+(require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
 ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
