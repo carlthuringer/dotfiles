@@ -186,16 +186,6 @@
 ;;      #'region-active-p))
 ;;   :commands (isolate-quick-add isolate-long-add isolate-quick-delete isolate-long-delete isolate-quick-change isolate-long-change))
 
-;; (use-package ivy
-;;   :diminish
-;;   :demand t
-;;   :custom
-;;   (ivy-use-virtual-buffers t)
-;;   (enable-recursive-minibuffers t)
-;;   (ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
-;;   :config
-;;   (ivy-mode 1))
-
 (use-package js
   :custom
   (js-indent-level 2))
@@ -241,8 +231,6 @@
   (projectile-enable-caching t)
   (projectile-mode 1))
 
-
-
 (use-package refmt
   :hook (reason-mode . (lambda ()
 			 (add-hook 'before-save-hook #'refmt-before-save))))
@@ -276,11 +264,6 @@
 ;;   (sml/setup)
 ;;   (remove-hook 'display-time-hook 'sml/propertize-time-string))
 
-;; (use-package string-inflection
-;;   :bind (("C-c <SPC>" . string-inflection-all-cycle)
-;;          :map ruby-mode-map
-;;               ("C-c <SPC>" . string-inflection-ruby-style-cycle)))
-
 (use-package select
   :if (memq window-system '(x))
   :custom (select-enable-clipboard t))
@@ -289,19 +272,6 @@
   :demand t
   :config
   (load-theme 'solarized-light t))
-
-;; (use-package swiper
-;;   :after ivy
-;;   :bind (:map swiper-map
-;;               ("M-y" . yank)
-;;               ("M-%" . swiper-query-replace)
-;;               ("C-." . swiper-avy)
-;;               ("M-c" . swiper-mc))
-;;   :bind (:map isearch-mode-map
-;;               ("C-o" . swiper-from-isearch)))
-
-;; (use-package treemacs
-;;   :bind (("M-0" . treemacs-select-window)))
 
 (use-package typescript-mode
   :hook ((typescript-mode . lsp))
@@ -313,8 +283,6 @@
   :commands which-key-mode
   :config
   (which-key-mode))
-
-
 
 ;;; Finalization
 
@@ -332,19 +300,21 @@
 
 
 
-(provide '.emacs)
-;;; .emacs ends here
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
+ '(backup-directory-alist '((".*" . "/tmp/")))
  '(completion-styles '(flex))
  '(dap-ruby-debug-program
    '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
+ '(exwm-randr-workspace-output-plist '(0 "eDP1" 1 "HDMI1"))
  '(helm-completion-style 'emacs)
  '(js-indent-level 2)
- '(lsp-enable-snippet nil)
+ '(lsp-enable-snippet nil t)
+ '(make-backup-files nil)
  '(package-selected-packages
    '(merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
@@ -367,3 +337,6 @@
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
 (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
 ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
+
+(provide '.emacs)
+;;; .emacs ends here
