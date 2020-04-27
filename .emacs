@@ -58,6 +58,27 @@
   (tool-bar-mode 0)
   )
 
+;; Customize.el
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+ '(safe-local-variable-values
+   '((whitespace-line-column . 80)
+     (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
+     (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
+     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+ )
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
 ;; Ensure system packages with use-package
 ;; (use-package use-package-ensure-system-package)
 
@@ -229,6 +250,7 @@
   :bind-keymap (("s-p" . projectile-command-map))
   :custom (projectile-completion-system 'helm)
   (projectile-enable-caching t)
+  :config
   (projectile-mode 1))
 
 (use-package refmt
@@ -300,40 +322,6 @@
 
 
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
- '(backup-directory-alist '((".*" . "/tmp/")))
- '(completion-styles '(flex))
- '(dap-ruby-debug-program
-   '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
- '(exwm-randr-workspace-output-plist '(0 "eDP1" 1 "HDMI1"))
- '(helm-completion-style 'emacs)
- '(js-indent-level 2)
- '(lsp-enable-snippet nil t)
- '(make-backup-files nil)
- '(package-selected-packages
-   '(merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
- '(projectile-completion-system 'helm)
- '(projectile-enable-caching t)
- '(projectile-mode 1 nil (projectile))
- '(ruby-insert-encoding-magic-comment nil t)
- '(safe-local-variable-values
-   '((whitespace-line-column . 80)
-     (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
-     (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
-     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
- '(select-enable-clipboard t)
- '(typescript-indent-level 2 t))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
 (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
 ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
