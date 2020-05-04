@@ -56,6 +56,10 @@
   (scroll-bar-mode 0)
   (menu-bar-mode 0)
   (tool-bar-mode 0)
+
+  ;; Open eshell on emacs startup
+  (setq inhibit-startup-screen t)
+  (add-hook 'emacs-startup-hook 'eshell)
   )
 
 ;; Ensure system packages with use-package
@@ -123,7 +127,7 @@
 
 (use-package exec-path-from-shell
   :demand t
-  :if (memq window-system '(ns))
+  ;; :if (memq window-system '(ns))
   :config
   (exec-path-from-shell-initialize))
 
