@@ -236,7 +236,15 @@
 
 (use-package org
   :hook ((org-mode . org-indent-mode)
-         (org-mode . auto-fill-mode)))
+         (org-mode . visual-line-mode))
+  :bind (("C-c l" . org-store-link)
+	 ("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)))
+
+(use-package org-journal
+  :demand t
+  :defer t
+  :custom (org-journal-dir "~/org/journal"))
 
 (use-package prettier-js
   :after add-node-modules-path
@@ -302,6 +310,14 @@
 (use-package typescript-mode
   :hook ((typescript-mode . lsp))
   :custom (typescript-indent-level 2))
+
+(use-package unfill-paragraph
+  :bind (("M-Q" . unfill-paragraph)))
+
+(use-package visual-fill-column
+  :hook (visual-line-mode . visual-fill-column-mode)
+  :custom (split-window-preferred-function 'visual-fill-column-split-window-sensibly)
+  )
 
 (use-package which-key
   :defer 5
