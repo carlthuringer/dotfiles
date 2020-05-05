@@ -68,14 +68,29 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(auto-save-file-name-transforms
+   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
+ '(backup-directory-alist
+   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
+ '(completion-styles '(flex))
+ '(js-indent-level 2)
+ '(lsp-enable-snippet nil t)
+ '(make-backup-files nil)
+ '(org-hide-emphasis-markers t)
+ '(org-journal-dir "~/org/")
+ '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+ '(projectile-completion-system 'helm)
+ '(projectile-enable-caching t)
+ '(ruby-insert-encoding-magic-comment nil t)
  '(safe-local-variable-values
    '((whitespace-line-column . 80)
      (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
      (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
- )
+ '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
+ '(typescript-indent-level 2 t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -236,15 +251,32 @@
 
 (use-package org
   :hook ((org-mode . org-indent-mode)
-         (org-mode . visual-line-mode))
+         (org-mode . visual-line-mode)
+	 (org-mode . mixed-pitch-mode))
   :bind (("C-c l" . org-store-link)
 	 ("C-c a" . org-agenda)
-	 ("C-c c" . org-capture)))
+	 ("C-c c" . org-capture))
+  :custom (org-hide-emphasis-markers t))
+
 
 (use-package org-journal
   :demand t
-  :defer t
-  :custom (org-journal-dir "~/org/journal"))
+  :custom (org-journal-dir "~/org/"))
+
+(use-package org-roam
+  :defer 5
+  :hook
+  (after-init . org-roam-mode)
+  :custom
+  (org-roam-directory "~/org/")
+  :bind (:map org-roam-mode-map
+              (("C-c n l" . org-roam)
+               ("C-c n f" . org-roam-find-file)
+               ("C-c n j" . org-roam-jump-to-index)
+               ("C-c n b" . org-roam-switch-to-buffer)
+               ("C-c n g" . org-roam-graph))
+              :map org-mode-map
+              (("C-c n i" . org-roam-insert))))
 
 (use-package prettier-js
   :after add-node-modules-path
