@@ -73,17 +73,18 @@
  '(backup-directory-alist
    '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
  '(completion-styles '(flex))
+ '(fit-window-to-buffer-horizontally t)
  '(js-indent-level 2)
- '(lsp-enable-snippet nil t)
+ '(lsp-enable-snippet nil)
  '(make-backup-files nil)
  '(org-hide-emphasis-markers t)
  '(org-journal-dir "~/org/")
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil t)
+ '(ruby-insert-encoding-magic-comment nil)
  '(safe-local-variable-values
    '((whitespace-line-column . 80)
      (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
@@ -202,7 +203,8 @@
 (use-package helm-projectile
   :after helm
   :config (helm-projectile-on))
-  
+
+(use-package iedit-mode :defer 5)
 
 (use-package inf-ruby
   :hook ((ruby-mode . inf-ruby-minor-mode)
@@ -210,21 +212,21 @@
   :bind (:map inf-ruby-minor-mode-map
               ("C-c C-s" . inf-ruby-console-auto)))
 
-;; (use-package isolate
-;;   :hook (activate-mark . my-isolate-set-transient-map)
-;;   :preface
-;;   (defun my-isolate-set-transient-map ()
-;;     (set-transient-map
-;;      (let ((map (make-sparse-keymap)))
-;;        (define-key map "s" #'isolate-quick-add)
-;;        (define-key map "S" #'isolate-long-add)
-;;        (define-key map "d" #'isolate-quick-delete)
-;;        (define-key map "D" #'isolate-long-delete)
-;;        (define-key map "c" #'isolate-quick-change)
-;;        (define-key map "C" #'isolate-long-change)
-;;        map)
-;;      #'region-active-p))
-;;   :commands (isolate-quick-add isolate-long-add isolate-quick-delete isolate-long-delete isolate-quick-change isolate-long-change))
+(use-package isolate
+  :hook (activate-mark . my-isolate-set-transient-map)
+  :preface
+  (defun my-isolate-set-transient-map ()
+    (set-transient-map
+     (let ((map (make-sparse-keymap)))
+       (define-key map "s" #'isolate-quick-add)
+       (define-key map "S" #'isolate-long-add)
+       (define-key map "d" #'isolate-quick-delete)
+       (define-key map "D" #'isolate-long-delete)
+       (define-key map "c" #'isolate-quick-change)
+       (define-key map "C" #'isolate-long-change)
+       map)
+     #'region-active-p))
+  :commands (isolate-quick-add isolate-long-add isolate-quick-delete isolate-long-delete isolate-quick-change isolate-long-change))
 
 (use-package js
   :custom
@@ -341,7 +343,8 @@
 
 (use-package typescript-mode
   :hook ((typescript-mode . lsp))
-  :custom (typescript-indent-level 2))
+  :custom (typescript-indent-level 2)
+  :config (electric-indent-mode 0))
 
 (use-package unfill-paragraph
   :bind (("M-Q" . unfill-paragraph)))
