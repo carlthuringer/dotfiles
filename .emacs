@@ -56,6 +56,9 @@
   (scroll-bar-mode 0)
   (menu-bar-mode 0)
   (tool-bar-mode 0)
+  (tooltip-mode 0)
+  (setq x-underline-at-descent-line t)
+  (set-default 'cursor-type '(hbar . 2))
 
   ;; Open eshell on emacs startup
   (setq inhibit-startup-screen t)
@@ -68,28 +71,27 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms
-   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
- '(backup-directory-alist
-   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
+ '(backup-directory-alist '((".*" . "/tmp/")))
  '(completion-styles '(flex))
  '(fit-window-to-buffer-horizontally t)
  '(js-indent-level 2)
- '(lsp-enable-snippet nil)
+ '(lsp-enable-snippet nil t)
  '(make-backup-files nil)
  '(org-hide-emphasis-markers t)
  '(org-journal-dir "~/org/")
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(beacon isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil)
+ '(ruby-insert-encoding-magic-comment nil t)
  '(safe-local-variable-values
    '((whitespace-line-column . 80)
      (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
      (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+ '(select-enable-clipboard t)
  '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
  '(typescript-indent-level 2 t))
 (custom-set-faces
@@ -122,6 +124,10 @@
   :bind* ("C-." . avy-goto-char-timer)
   :config
   (avy-setup-default))
+
+(use-package beacon
+  :demand t
+  :config (beacon-mode 1))
 
 (use-package company
   :hook (prog-mode . company-mode))
@@ -186,6 +192,10 @@
   :if (memq window-system '(ns))
   :load-path "lisp"
   :hook (prog-mode . fira-code-mode))
+
+(use-package frame
+  :demand t
+  :config (blink-cursor-mode 0))
 
 (use-package graphql-mode
   :mode "\\.graphqls\\'")
