@@ -101,19 +101,6 @@
  ;; If there is more than one, they won't work right.
  )
 
-;; Ensure system packages with use-package
-;; (use-package use-package-ensure-system-package)
-
-;; Libraries
-;; (use-package ag :ensure-system-package ag)
-;; (use-package diminish :demand t)
-;; (use-package nvm :commands (nvm-use nvm-use-for-buffer))
-;; (use-package flx)
-;; (use-package system-packages
-;;   :demand t
-;;   :config
-;;   (setq system-packages-use-sudo nil))
-
 ;; ;; Package Configuration
 
 (use-package add-node-modules-path
