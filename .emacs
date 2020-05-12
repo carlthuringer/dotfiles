@@ -71,27 +71,32 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
- '(backup-directory-alist '((".*" . "/tmp/")))
+ '(auto-save-file-name-transforms
+   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
+ '(backup-directory-alist
+   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
  '(completion-styles '(flex))
+ '(electric-indent-mode nil)
  '(fit-window-to-buffer-horizontally t)
+ '(helm-completion-style 'emacs)
  '(js-indent-level 2)
- '(lsp-enable-snippet nil t)
+ '(lsp-enable-snippet nil)
  '(make-backup-files nil)
  '(org-hide-emphasis-markers t)
  '(org-journal-dir "~/org/")
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(beacon isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil t)
+ '(ruby-insert-encoding-magic-comment nil)
  '(safe-local-variable-values
-   '((whitespace-line-column . 80)
+   '((eval add-to-list 'projectile-globally-ignored-directories "node_modules" t)
+     (eval add-to-list 'projectile-globally-ignored-directories "repos" t)
+     (whitespace-line-column . 80)
      (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
      (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
- '(select-enable-clipboard t)
  '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
  '(typescript-indent-level 2 t))
 (custom-set-faces
@@ -293,8 +298,16 @@
   :bind-keymap (("s-p" . projectile-command-map))
   :custom (projectile-completion-system 'helm)
   (projectile-enable-caching t)
+  :preface
+  ;; Make the file list creation faster by NOT calling `projectile-get-sub-projects-files'
+  (defun modi/advice-projectile-no-sub-project-files ()
+    "Directly call `projectile-get-ext-command'. No need to try to get a
+        list of sub-project files if the vcs is git."
+    (projectile-files-via-ext-command (projectile-get-ext-command)))
   :config
-  (projectile-mode 1))
+  (projectile-mode 1)
+  (advice-add 'projectile-get-repo-files :override #'modi/advice-projectile-no-sub-project-files)
+)
 
 (use-package refmt
   :hook (reason-mode . (lambda ()
@@ -332,6 +345,12 @@
 (use-package select
   :if (memq window-system '(x))
   :custom (select-enable-clipboard t))
+
+(use-package smart-mode-line
+  :demand t
+  :config
+  (setq sml/theme 'automatic)
+  (sml/setup))
 
 (use-package solarized-theme
   :demand t
