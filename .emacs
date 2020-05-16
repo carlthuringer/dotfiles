@@ -71,36 +71,10 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms
-   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
- '(backup-directory-alist
-   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
- '(completion-styles '(flex))
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
- '(electric-indent-mode nil)
- '(fit-window-to-buffer-horizontally t)
- '(helm-completion-style 'emacs)
- '(js-indent-level 2)
- '(lsp-enable-snippet nil)
- '(make-backup-files nil)
- '(org-hide-emphasis-markers t)
- '(org-journal-dir "~/org/")
- '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
- '(projectile-completion-system 'helm)
- '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil)
- '(safe-local-variable-values
-   '((eval add-to-list 'projectile-globally-ignored-directories "node_modules" t)
-     (eval add-to-list 'projectile-globally-ignored-directories "repos" t)
-     (whitespace-line-column . 80)
-     (eval add-to-list 'projectile-globally-ignored-directories "*node_modules" t)
-     (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
-     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
- '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
- '(typescript-indent-level 2))
+   '(diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -271,7 +245,10 @@
   :bind (("C-c l" . org-store-link)
 	 ("C-c a" . org-agenda)
 	 ("C-c c" . org-capture))
-  :custom (org-hide-emphasis-markers t))
+  :custom (org-hide-emphasis-markers t)
+  (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
+	     ("begin" "$1" "$" "$$" "\\(" "\\[")))
+)
 
 
 (use-package org-journal
