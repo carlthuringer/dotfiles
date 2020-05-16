@@ -76,6 +76,8 @@
  '(backup-directory-alist
    '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
  '(completion-styles '(flex))
+ '(custom-safe-themes
+   '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(electric-indent-mode nil)
  '(fit-window-to-buffer-horizontally t)
  '(helm-completion-style 'emacs)
@@ -86,7 +88,7 @@
  '(org-journal-dir "~/org/")
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(ruby-insert-encoding-magic-comment nil)
@@ -98,7 +100,7 @@
      (eval add-to-list 'projectile-globally-ignored-directories "*repos" t)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
- '(typescript-indent-level 2 t))
+ '(typescript-indent-level 2))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -118,10 +120,12 @@
   (avy-setup-default))
 
 (use-package beacon
+  :diminish
   :demand t
   :config (beacon-mode 1))
 
 (use-package company
+  :diminish
   :hook (prog-mode . company-mode))
 
 (use-package company-lsp
@@ -134,6 +138,7 @@
   :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
 
 (use-package dap-mode
+  :diminish
   :commands (dap-debug dap-debug-edit-template)
   :config
   (dap-ui-mode 1)
@@ -190,9 +195,11 @@
   :config (blink-cursor-mode 0))
 
 (use-package graphql-mode
+  :diminish
   :mode "\\.graphqls\\'")
 
 (use-package helm
+  :diminish
   :demand t
   :commands (helm-M-x)
   :bind ("M-x" . helm-M-x)
@@ -206,7 +213,7 @@
   :after helm
   :config (helm-projectile-on))
 
-(use-package iedit-mode :defer 5)
+(use-package iedit-mode :diminish :defer 5)
 
 (use-package inf-ruby
   :hook ((ruby-mode . inf-ruby-minor-mode)
@@ -235,25 +242,29 @@
   (js-indent-level 2))
 
 (use-package linum
+  :diminish
   :hook (prog-mode . linum-mode))
 
 (use-package lsp-mode
+  :diminish
   :commands lsp
   :custom (lsp-enable-snippet nil)
   :hook (ruby-mode . lsp))
 
-(use-package lsp-ui :commands lsp-ui-mode)
+(use-package lsp-ui :diminish :commands lsp-ui-mode)
 
 (use-package magit
   :bind (("C-x g" . magit-status)))
 
 (use-package merlin
+  :diminish
   :hook (reason-mode . merlin-mode))
 
 (use-package minibuffer
   :custom (completion-styles '(flex)))
 
 (use-package org
+  :diminish
   :hook ((org-mode . org-indent-mode)
          (org-mode . visual-line-mode)
 	 (org-mode . mixed-pitch-mode))
@@ -268,6 +279,7 @@
   :custom (org-journal-dir "~/org/"))
 
 (use-package org-roam
+  :diminish
   :defer 5
   :hook
   (after-init . org-roam-mode)
@@ -278,11 +290,13 @@
                ("C-c n f" . org-roam-find-file)
                ("C-c n j" . org-roam-jump-to-index)
                ("C-c n b" . org-roam-switch-to-buffer)
-               ("C-c n g" . org-roam-graph))
+               ("C-c n g" . org-roam-graph)
+	       ("C-c n n" . org-roam-today))
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
 
 (use-package prettier-js
+  :diminish
   :after add-node-modules-path
   :hook ((typescript-mode . prettier-js-mode)
 	 (js-mode . prettier-js-mode)))
@@ -292,6 +306,7 @@
   :config (show-paren-mode 1))
 
 (use-package projectile
+  :diminish
   :defer 5
   :diminish
   :hook (prog-mode . projectile-mode)
@@ -371,8 +386,8 @@
   )
 
 (use-package which-key
-  :defer 5
   :diminish
+  :defer 5
   :commands which-key-mode
   :config
   (which-key-mode))
