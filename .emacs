@@ -60,9 +60,9 @@
   (setq x-underline-at-descent-line t)
   (set-default 'cursor-type '(hbar . 2))
 
-  ;; Open eshell on emacs startup
+  ;; Open Org scratch on startup
   (setq inhibit-startup-screen t)
-  (add-hook 'emacs-startup-hook 'eshell)
+  (setq initial-major-mode 'org-mode)
   )
 
 ;; Customize.el
@@ -71,10 +71,28 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
+ '(backup-directory-alist '((".*" . "/tmp/")))
+ '(completion-styles '(flex))
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
+ '(js-indent-level 2)
+ '(lsp-enable-snippet nil)
+ '(make-backup-files nil)
+ '(org-agenda-files '("~/org/20200511193958-machine_learning.org"))
+ '(org-format-latex-options
+   '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
+		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
+ '(org-hide-emphasis-markers t)
+ '(org-journal-dir "~/org/")
+ '(org-pretty-entities t)
+ '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package)))
+   '(beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+ '(projectile-completion-system 'helm)
+ '(projectile-enable-caching t)
+ '(ruby-insert-encoding-magic-comment nil t)
+ '(select-enable-clipboard t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -187,7 +205,8 @@
   :after helm
   :config (helm-projectile-on))
 
-(use-package iedit-mode :diminish :defer 5)
+(use-package iedit-mode :diminish :defer 5
+  :bind ("C-;" . iedit-mode))
 
 (use-package inf-ruby
   :hook ((ruby-mode . inf-ruby-minor-mode)
