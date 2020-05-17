@@ -245,7 +245,9 @@
   :bind (("C-c l" . org-store-link)
 	 ("C-c a" . org-agenda)
 	 ("C-c c" . org-capture))
-  :custom (org-hide-emphasis-markers t)
+  :custom
+  (org-hide-emphasis-markers t)
+  (org-pretty-entities t)
   (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
 	     ("begin" "$1" "$" "$$" "\\(" "\\[")))
 )
