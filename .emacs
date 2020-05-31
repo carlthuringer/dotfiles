@@ -33,7 +33,6 @@
   (add-to-list 'load-path "~/.emacs.d/lisp/" t)
   ;; Set up package.el the traditional way.
   (require 'package)
-  (package-initialize)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
 
