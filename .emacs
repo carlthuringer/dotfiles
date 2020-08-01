@@ -57,6 +57,7 @@
   (tool-bar-mode 0)
   (tooltip-mode 0)
   (setq x-underline-at-descent-line t)
+  (setq visible-bell 1)
 
   ;; Open Org scratch on startup
   (setq inhibit-startup-screen t)
@@ -70,9 +71,9 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(auto-save-file-name-transforms
-   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
+   '((".*" "/tmp/" t)))
  '(backup-directory-alist
-   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
+   '((".*" . "/tmp/")))
  '(completion-styles '(flex))
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
