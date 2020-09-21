@@ -23,8 +23,9 @@
 (add-hook 'after-init-hook
           `(lambda ()
              (setq file-name-handler-alist file-name-handler-alist-old
-                   gc-cons-threshold 800000
-                   gc-cons-percentage 0.1)
+                   gc-cons-threshold 100000000
+                   gc-cons-percentage 0.5
+		   read-process-output-max (* 1024 1024))
              (garbage-collect)) t)
 
 ;; Environment
@@ -61,6 +62,13 @@
   ;; Open Org scratch on startup
   (setq inhibit-startup-screen t)
   (setq initial-major-mode 'org-mode)
+
+  ;; Set visual line mode on markdown
+  (add-hook 'markdown-mode-hook #'visual-line-mode)
+
+  ;; Delete trailing whitespace on save in prog modes.
+  (add-hook 'prog-mode-hook
+	    (lambda () (add-to-list 'write-file-functions 'delete-trailing-whitespace)))
   )
 
 ;; Customize.el
@@ -69,10 +77,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms
-   '((".*" "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/" t)))
- '(backup-directory-alist
-   '((".*" . "/var/folders/cy/9htn9_d168vdrs_h722zt_g00000gn/T/")))
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
+ '(backup-directory-alist '((".*" . "/tmp/")))
  '(completion-styles '(flex))
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
@@ -80,7 +86,6 @@
  '(js-indent-level 2)
  '(lsp-enable-snippet nil)
  '(make-backup-files nil)
- '(org-agenda-files '("~/org/20200511193958-machine_learning.org"))
  '(org-format-latex-options
    '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
 		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
@@ -89,15 +94,16 @@
  '(org-pretty-entities t)
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column org-journal merlin-eldoc iedit nvm helm-tramp reason-mode tuareg default-text-scale add-node-modules-path prettier-js typescript-mode flycheck lsp-ui graphql-mode yaml-mode inf-ruby helm-ag expand-region company-lsp company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(forge plantuml-mode dumb-jump terraform-mode helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale add-node-modules-path prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(ruby-insert-encoding-magic-comment nil)
  '(safe-local-variable-values
-   '((prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+   '((rspec-use-bundler-when-possible)
+     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(select-enable-clipboard t)
  '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
- '(typescript-indent-level 2))
+ '(typescript-indent-level 2 t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -125,10 +131,10 @@
   :diminish
   :hook (prog-mode . company-mode))
 
-(use-package company-lsp
-  :after company
-  :commands company-lsp
-  :config (add-to-list 'company-backends 'company-lsp))
+;; (use-package company-lsp
+;;   :after company
+;;   :commands company-lsp
+;;   :config (add-to-list 'company-backends 'company-lsp))
 
 (use-package dap-hydra
   :after dap-mode
@@ -152,10 +158,13 @@
   :demand t
   :config (default-text-scale-mode))
 
+(use-package dumb-jump
+  :config (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
 (use-package env
   :after exec-path-from-shell
   :config
-  (exec-path-from-shell-copy-env "NPM_TOKEN")
+  (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_GEMS__CONTRIBSYS__COM"))
   ;; In order to use ssh-agent with git and gpg, set the ssh auth sock
   (setenv "SSH_AUTH_SOCK"
           (substring
@@ -195,6 +204,13 @@
   :diminish
   :mode "\\.graphqls\\'")
 
+(use-package graphviz-dot-mode
+  :ensure t
+  :config
+  (setq graphviz-dot-indent-width 4))
+
+(use-package company-graphviz-dot)
+
 (use-package helm
   :diminish
   :demand t
@@ -205,7 +221,11 @@
 (use-package helm-ls-git
   :after helm
   :bind ("C-x C-d" . 'helm-browse-project))
-  
+
+;; I'm not having a good time with LSP
+;; (use-package helm-lsp
+;;   :commands helm-lsp-workspace-symbol)
+
 (use-package helm-projectile
   :after helm
   :config (helm-projectile-on))
@@ -243,20 +263,14 @@
   :diminish
   :hook (prog-mode . linum-mode))
 
-(use-package lsp-mode
-  :diminish
-  :commands lsp
-  :custom (lsp-enable-snippet nil)
-  :hook (ruby-mode . lsp))
-
-(use-package lsp-ui :diminish :commands lsp-ui-mode)
-
+;; Git and Source Control
 (use-package magit
   :bind (("C-x g" . magit-status)))
 
-(use-package merlin
-  :diminish
-  :hook (reason-mode . merlin-mode))
+(use-package forge
+  :after magit
+  :custom (forge-topic-list-limit '(100 . -1))
+  )
 
 (use-package minibuffer
   :custom (completion-styles '(flex)))
@@ -273,13 +287,13 @@
   (org-hide-emphasis-markers t)
   (org-pretty-entities t)
   (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
-	     ("begin" "$1" "$" "$$" "\\(" "\\[")))
+					  ("begin" "$1" "$" "$$" "\\(" "\\[")))
+  (org-agenda-files '("~/org/"))
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((dot . t)))
 )
-
-
-(use-package org-journal
-  :demand t
-  :custom (org-journal-dir "~/org/"))
 
 (use-package org-roam
   :diminish
@@ -297,6 +311,21 @@
 	       ("C-c n n" . org-roam-dailies-today))
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
+
+(use-package org-present
+  :hook ((org-present-mode . (lambda ()
+			       (org-present-big)
+			       (org-present-show-cursor)
+			       (org-redisplay-inline-images)
+			       ))
+	 (org-present-mode-quit-hook . (lambda ()
+					 (org-present-small)
+					 (org-remove-inline-images)
+					 ))
+	 ))
+
+(use-package plantuml-mode
+  :custom (plantuml-default-exec-mode 'executable))
 
 (use-package prettier-js
   :diminish
@@ -326,10 +355,6 @@
   (advice-add 'projectile-get-repo-files :override #'modi/advice-projectile-no-sub-project-files)
 )
 
-(use-package refmt
-  :hook (reason-mode . (lambda ()
-			 (add-hook 'before-save-hook #'refmt-before-save))))
-
 (use-package ruby-mode
   :preface
   (defun my-dap-debug-rspec-at-line ()
@@ -345,19 +370,12 @@
 	   :useBundler "true"
 	   :debuggerPort "1235")))
   :bind (:map ruby-mode-map
-              ("C-c f" . lsp-format-buffer)
+;              ("C-c f" . lsp-format-buffer)
               ("C-c d t" . dap-debug-edit-template)
               ("C-c d d" . dap-debug)
 	      ("C-c d h" . dap-hydra)
 	      ("C-c , , s" . my-dap-debug-rspec-at-line))
   :custom (ruby-insert-encoding-magic-comment nil))
-
-;; (use-package smart-mode-line
-;;   :config
-;;   ;; See https://github.com/Malabarba/smart-mode-line/issues/217
-;;   (setq mode-line-format (delq 'mode-line-position mode-line-format))
-;;   (sml/setup)
-;;   (remove-hook 'display-time-hook 'sml/propertize-time-string))
 
 (use-package select
   :if (memq window-system '(x))
