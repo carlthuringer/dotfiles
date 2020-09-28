@@ -78,10 +78,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms
-   '((".*" "/tmp/" t)))
- '(backup-directory-alist
-   '((".*" . "/tmp/")))
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
+ '(backup-directory-alist '((".*" . "/tmp/")))
  '(completion-styles '(flex))
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
@@ -97,10 +95,10 @@
  '(org-pretty-entities t)
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(forge plantuml-mode dumb-jump terraform-mode helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale add-node-modules-path prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil)
+ '(ruby-insert-encoding-magic-comment nil t)
  '(safe-local-variable-values
    '((rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
@@ -116,10 +114,6 @@
 
 ;; ;; Package Configuration
 
-(use-package add-node-modules-path
-  :commands add-node-modules-path
-  :hook (js-mode . add-node-modules-path))
-
 (use-package avy
   :bind* ("C-." . avy-goto-char-timer)
   :config
@@ -133,11 +127,6 @@
 (use-package company
   :diminish
   :hook (prog-mode . company-mode))
-
-;; (use-package company-lsp
-;;   :after company
-;;   :commands company-lsp
-;;   :config (add-to-list 'company-backends 'company-lsp))
 
 (use-package dap-hydra
   :after dap-mode
@@ -224,10 +213,6 @@
 (use-package helm-ls-git
   :after helm
   :bind ("C-x C-d" . 'helm-browse-project))
-
-;; I'm not having a good time with LSP
-;; (use-package helm-lsp
-;;   :commands helm-lsp-workspace-symbol)
 
 (use-package helm-projectile
   :after helm
