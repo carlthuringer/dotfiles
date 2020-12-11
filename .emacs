@@ -95,7 +95,7 @@
  '(org-pretty-entities t)
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
  '(ruby-insert-encoding-magic-comment nil t)
@@ -114,6 +114,8 @@
 
 ;; ;; Package Configuration
 
+
+;; General-use Packages
 (use-package avy
   :bind* ("C-." . avy-goto-char-timer)
   :config
@@ -123,29 +125,6 @@
   :diminish
   :demand t
   :config (beacon-mode 1))
-
-(use-package company
-  :diminish
-  :hook (prog-mode . company-mode))
-
-(use-package dap-hydra
-  :after dap-mode
-  :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
-
-(use-package dap-mode
-  :diminish
-  :commands (dap-debug dap-debug-edit-template)
-  :config
-  (dap-ui-mode 1)
-  (dap-tooltip-mode 1)
-  (tooltip-mode 1))
-
-(use-package dap-ruby
-  :after dap-mode
-  :custom (dap-ruby-debug-program '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
-  :config
-  (dap-ruby-setup))
-
 (use-package default-text-scale
   :demand t
   :config (default-text-scale-mode))
@@ -192,6 +171,77 @@
   :demand t
   :config (blink-cursor-mode 0))
 
+(use-package helm
+  :diminish
+  :demand t
+  :commands (helm-M-x)
+  :bind ("M-x" . helm-M-x)
+  :config (helm-mode 1))
+
+(use-package linum
+  :diminish
+  :hook (prog-mode . linum-mode))
+
+(use-package minibuffer
+  :custom (completion-styles '(flex)))
+(use-package select
+  :if (memq window-system '(x))
+  :custom (select-enable-clipboard t))
+
+(use-package smart-mode-line
+  :demand t
+  :config
+  (setq sml/theme 'automatic)
+  (sml/setup))
+
+(use-package solarized-theme
+  :demand t
+  :config
+  (load-theme 'solarized-light t))
+
+(use-package paren
+  :demand t
+  :config (show-paren-mode 1))
+
+(use-package unfill-paragraph
+  :bind (("M-Q" . unfill-paragraph)))
+
+(use-package visual-fill-column
+  :hook (visual-line-mode . visual-fill-column-mode)
+  :custom (split-window-preferred-function 'visual-fill-column-split-window-sensibly)
+  )
+
+(use-package which-key
+  :diminish
+  :defer 5
+  :commands which-key-mode
+  :config
+  (which-key-mode))
+
+;; Programming
+
+(use-package company
+  :diminishn
+  :hook (prog-mode . company-mode))
+
+(use-package dap-hydra
+  :after dap-mode
+  :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
+
+(use-package dap-mode
+  :diminish
+  :commands (dap-debug dap-debug-edit-template)
+  :config
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  (tooltip-mode 1))
+
+(use-package dap-ruby
+  :after dap-mode
+  :custom (dap-ruby-debug-program '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
+  :config
+  (dap-ruby-setup))
+
 (use-package graphql-mode
   :diminish
   :mode "\\.graphqls\\'")
@@ -202,13 +252,6 @@
   (setq graphviz-dot-indent-width 4))
 
 (use-package company-graphviz-dot)
-
-(use-package helm
-  :diminish
-  :demand t
-  :commands (helm-M-x)
-  :bind ("M-x" . helm-M-x)
-  :config (helm-mode 1))
 
 (use-package helm-ls-git
   :after helm
@@ -247,10 +290,6 @@
   :custom
   (js-indent-level 2))
 
-(use-package linum
-  :diminish
-  :hook (prog-mode . linum-mode))
-
 ;; Git and Source Control
 (use-package magit
   :bind (("C-x g" . magit-status)))
@@ -259,9 +298,6 @@
   :after magit
   :custom (forge-topic-list-limit '(100 . -1))
   )
-
-(use-package minibuffer
-  :custom (completion-styles '(flex)))
 
 (use-package org
   :diminish
@@ -290,6 +326,15 @@
   (after-init . org-roam-mode)
   :custom
   (org-roam-directory "~/org/")
+  (org-roam-dailies-directory "daily/")
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry
+      #'org-roam-capture--get-point
+      "* %?"
+      :file-name "daily/%<%Y-%m-%d>"
+      :head "#+title: %<%Y-%m-%d>\n\n")))
+  (org-roam-buffer-position 'bottom)
+  (org-roam-index-file "~/org/index.org")
   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
@@ -319,10 +364,6 @@
   :diminish
   :hook ((typescript-mode . prettier-js-mode)
 	 (js-mode . prettier-js-mode)))
-
-(use-package paren
-  :demand t
-  :config (show-paren-mode 1))
 
 (use-package projectile
   :diminish
@@ -365,40 +406,10 @@
 	      ("C-c , , s" . my-dap-debug-rspec-at-line))
   :custom (ruby-insert-encoding-magic-comment nil))
 
-(use-package select
-  :if (memq window-system '(x))
-  :custom (select-enable-clipboard t))
-
-(use-package smart-mode-line
-  :demand t
-  :config
-  (setq sml/theme 'automatic)
-  (sml/setup))
-
-(use-package solarized-theme
-  :demand t
-  :config
-  (load-theme 'solarized-light t))
-
 (use-package typescript-mode
   :hook ((typescript-mode . lsp))
   :custom (typescript-indent-level 2)
   :config (electric-indent-mode 0))
-
-(use-package unfill-paragraph
-  :bind (("M-Q" . unfill-paragraph)))
-
-(use-package visual-fill-column
-  :hook (visual-line-mode . visual-fill-column-mode)
-  :custom (split-window-preferred-function 'visual-fill-column-split-window-sensibly)
-  )
-
-(use-package which-key
-  :diminish
-  :defer 5
-  :commands which-key-mode
-  :config
-  (which-key-mode))
 
 ;;; Finalization
 
