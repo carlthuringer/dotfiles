@@ -95,10 +95,10 @@
  '(org-pretty-entities t)
  '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(projectile-completion-system 'helm)
  '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil t)
+ '(ruby-insert-encoding-magic-comment nil)
  '(safe-local-variable-values
    '((rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
@@ -218,6 +218,75 @@
   :config
   (which-key-mode))
 
+;; Git and Source Control
+(use-package magit
+  :bind (("C-x g" . magit-status)))
+
+(use-package forge
+  :after magit
+  :custom (forge-topic-list-limit '(100 . -1))
+  )
+
+;; Org-mode
+
+(use-package org
+  :diminish
+  :hook ((org-mode . org-indent-mode)
+         (org-mode . visual-line-mode)
+	 (org-mode . mixed-pitch-mode))
+  :bind (("C-c l" . org-store-link)
+	 ("C-c a" . org-agenda)
+	 ("C-c c" . org-capture))
+  :custom
+  (org-hide-emphasis-markers t)
+  (org-pretty-entities t)
+  (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
+					  ("begin" "$1" "$" "$$" "\\(" "\\[")))
+  (org-agenda-files '("~/org/"))
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((dot . t)))
+)
+
+(use-package org-roam
+  :diminish
+  :defer 5
+  :hook
+  (after-init . org-roam-mode)
+  :custom
+  (org-roam-directory "~/org/")
+  (org-roam-dailies-directory "daily/")
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry
+      #'org-roam-capture--get-point
+      "* %?"
+      :file-name "daily/%<%Y-%m-%d>"
+      :head "#+title: %<%Y-%m-%d>\n\n")))
+  (org-roam-buffer-position 'bottom)
+  (org-roam-index-file "~/org/index.org")
+  :bind (:map org-roam-mode-map
+              (("C-c n l" . org-roam)
+               ("C-c n f" . org-roam-find-file)
+               ("C-c n j" . org-roam-jump-to-index)
+               ("C-c n b" . org-roam-switch-to-buffer)
+               ("C-c n g" . org-roam-graph)
+	       ("C-c n n" . org-roam-dailies-today))
+              :map org-mode-map
+              (("C-c n i" . org-roam-insert))))
+
+(use-package org-present
+  :hook ((org-present-mode . (lambda ()
+			       (org-present-big)
+			       (org-present-show-cursor)
+			       (org-redisplay-inline-images)
+			       ))
+	 (org-present-mode-quit-hook . (lambda ()
+					 (org-present-small)
+					 (org-remove-inline-images)
+					 ))
+	 ))
+
 ;; Programming
 
 (use-package company
@@ -289,73 +358,6 @@
 (use-package js
   :custom
   (js-indent-level 2))
-
-;; Git and Source Control
-(use-package magit
-  :bind (("C-x g" . magit-status)))
-
-(use-package forge
-  :after magit
-  :custom (forge-topic-list-limit '(100 . -1))
-  )
-
-(use-package org
-  :diminish
-  :hook ((org-mode . org-indent-mode)
-         (org-mode . visual-line-mode)
-	 (org-mode . mixed-pitch-mode))
-  :bind (("C-c l" . org-store-link)
-	 ("C-c a" . org-agenda)
-	 ("C-c c" . org-capture))
-  :custom
-  (org-hide-emphasis-markers t)
-  (org-pretty-entities t)
-  (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
-					  ("begin" "$1" "$" "$$" "\\(" "\\[")))
-  (org-agenda-files '("~/org/"))
-  :config
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((dot . t)))
-)
-
-(use-package org-roam
-  :diminish
-  :defer 5
-  :hook
-  (after-init . org-roam-mode)
-  :custom
-  (org-roam-directory "~/org/")
-  (org-roam-dailies-directory "daily/")
-  (org-roam-dailies-capture-templates
-   '(("d" "default" entry
-      #'org-roam-capture--get-point
-      "* %?"
-      :file-name "daily/%<%Y-%m-%d>"
-      :head "#+title: %<%Y-%m-%d>\n\n")))
-  (org-roam-buffer-position 'bottom)
-  (org-roam-index-file "~/org/index.org")
-  :bind (:map org-roam-mode-map
-              (("C-c n l" . org-roam)
-               ("C-c n f" . org-roam-find-file)
-               ("C-c n j" . org-roam-jump-to-index)
-               ("C-c n b" . org-roam-switch-to-buffer)
-               ("C-c n g" . org-roam-graph)
-	       ("C-c n n" . org-roam-dailies-today))
-              :map org-mode-map
-              (("C-c n i" . org-roam-insert))))
-
-(use-package org-present
-  :hook ((org-present-mode . (lambda ()
-			       (org-present-big)
-			       (org-present-show-cursor)
-			       (org-redisplay-inline-images)
-			       ))
-	 (org-present-mode-quit-hook . (lambda ()
-					 (org-present-small)
-					 (org-remove-inline-images)
-					 ))
-	 ))
 
 (use-package plantuml-mode
   :custom (plantuml-default-exec-mode 'executable))
