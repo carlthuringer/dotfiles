@@ -78,33 +78,27 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
- '(backup-directory-alist '((".*" . "/tmp/")))
- '(completion-styles '(flex))
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)) nil nil "Customized with use-package files")
+ '(backup-directory-alist '((".*" . "/tmp/")) nil nil "Customized with use-package files")
+ '(completion-styles '(flex) nil nil "Customized with use-package minibuffer")
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
- '(js-indent-level 2)
  '(lsp-enable-snippet nil)
- '(make-backup-files nil)
- '(org-format-latex-options
-   '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
-		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
- '(org-hide-emphasis-markers t)
+ '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
- '(org-pretty-entities t)
- '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
- '(projectile-completion-system 'helm)
- '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil)
+   '(vue-mode protobuf-mode go-mode git-timemachine terraform-mode haml-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
-   '((rspec-use-bundler-when-possible)
+   '((rspec-command-options . "--fail-fast")
+     (flycheck-checker quote ruby-rubocop)
+     (flycheck-checker . "ruby-rubocop")
+     (rspec-use-docker-when-possible . t)
+     (rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(select-enable-clipboard t)
- '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
- '(typescript-indent-level 2 t))
+ '(warning-suppress-log-types '((comp)))
+ '(warning-suppress-types '(((org-roam)))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -129,13 +123,16 @@
   :demand t
   :config (default-text-scale-mode))
 
+(use-package docker
+  :bind ("C-c d" . docker))
+
 (use-package dumb-jump
   :config (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 (use-package env
   :after exec-path-from-shell
   :config
-  (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_GEMS__CONTRIBSYS__COM"))
+  (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_ENTERPRISE__CONTRIBSYS__COM"))
   ;; In order to use ssh-agent with git and gpg, set the ssh auth sock
   (setenv "SSH_AUTH_SOCK"
           (substring
@@ -206,10 +203,11 @@
 (use-package unfill-paragraph
   :bind (("M-Q" . unfill-paragraph)))
 
-(use-package visual-fill-column
-  :hook (visual-line-mode . visual-fill-column-mode)
-  :custom (split-window-preferred-function 'visual-fill-column-split-window-sensibly)
-  )
+;; This causes issues where I cannot split the window vertically...
+;; (use-package visual-fill-column
+;;   :hook (visual-line-mode . visual-fill-column-mode)
+;;   :custom (split-window-preferred-function 'visual-fill-column-split-window-sensibly)
+;;   )
 
 (use-package which-key
   :diminish
@@ -271,7 +269,7 @@
                ("C-c n j" . org-roam-jump-to-index)
                ("C-c n b" . org-roam-switch-to-buffer)
                ("C-c n g" . org-roam-graph)
-	       ("C-c n n" . org-roam-dailies-today))
+	       ("C-c n n" . org-roam-dailies-find-today))
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
 
@@ -294,11 +292,11 @@
 (setq lsp-keymap-prefix "s-l")
 
 (use-package lsp-mode
-    :hook (
-            (ruby-mode . lsp)
-            (lsp-mode . lsp-enable-which-key-integration))
-    :commands lsp)
-
+  :hook ((ruby-mode . lsp)
+	 (go-mode . lsp)
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp
+  :custom (lsp-headerline-breadcrumb-enable . nil))
 
 (use-package lsp-ui :commands lsp-ui-mode)
 
