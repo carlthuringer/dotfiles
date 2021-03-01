@@ -78,33 +78,22 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-save-file-name-transforms '((".*" "/tmp/" t)))
- '(backup-directory-alist '((".*" . "/tmp/")))
- '(completion-styles '(flex))
+ '(auto-save-file-name-transforms '((".*" "/tmp/" t)) nil nil "Customized with use-package files")
+ '(backup-directory-alist '((".*" . "/tmp/")) nil nil "Customized with use-package files")
+ '(completion-styles '(flex) nil nil "Customized with use-package minibuffer")
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
- '(js-indent-level 2)
  '(lsp-enable-snippet nil)
- '(make-backup-files nil)
- '(org-format-latex-options
-   '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
-		 ("begin" "$1" "$" "$$" "\\(" "\\[")))
- '(org-hide-emphasis-markers t)
+ '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
- '(org-pretty-entities t)
- '(org-roam-directory "~/org/")
  '(package-selected-packages
-   '(lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
- '(projectile-completion-system 'helm)
- '(projectile-enable-caching t)
- '(ruby-insert-encoding-magic-comment nil)
+   '(flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
    '((rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
- '(select-enable-clipboard t)
- '(split-window-preferred-function 'visual-fill-column-split-window-sensibly)
- '(typescript-indent-level 2 t))
+ '(select-enable-clipboard t nil nil "Customized with use-package select")
+ '(warning-suppress-types '((comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -166,6 +155,12 @@
   :if (memq window-system '(ns))
   :load-path "lisp"
   :hook (prog-mode . fira-code-mode))
+
+(use-package flycheck
+  :hook (ledger-mode . flycheck-mode))
+
+(use-package flycheck-ledger
+  :after ledger-mode)
 
 (use-package frame
   :demand t
