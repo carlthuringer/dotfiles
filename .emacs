@@ -84,17 +84,19 @@
  '(custom-safe-themes
    '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
+ '(ledger-reports
+   '(("bal -V" "ledger ")
+     ("bal" "%(binary) -f %(ledger-file) bal")
+     ("reg" "%(binary) -f %(ledger-file) reg")
+     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+     ("account" "%(binary) -f %(ledger-file) reg %(account)")))
  '(lsp-enable-snippet nil)
  '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
  '(package-selected-packages
-   '(flycheck-ledger ledger-mode vue-mode protobuf-mode go-mode git-timemachine terraform-mode haml-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(company-ledger flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
-   '((rspec-command-options . "--fail-fast")
-     (flycheck-checker quote ruby-rubocop)
-     (flycheck-checker . "ruby-rubocop")
-     (rspec-use-docker-when-possible . t)
-     (rspec-use-bundler-when-possible)
+   '((rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(select-enable-clipboard t nil nil "Customized with use-package select")
  '(warning-suppress-types '((comp))))
@@ -136,13 +138,16 @@
   (setenv "SSH_AUTH_SOCK"
           (substring
            (shell-command-to-string "gpgconf --list-dirs agent-ssh-socket")
-           0 -1)))
+           0 -1))
+  )
 
 (use-package exec-path-from-shell
   :demand t
   ;; :if (memq window-system '(ns))
   :config
-  (exec-path-from-shell-initialize))
+  (exec-path-from-shell-initialize)
+  (add-to-list 'exec-path "/home/carl/.rbenv/shims/")
+  )
 
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
