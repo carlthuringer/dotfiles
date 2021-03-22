@@ -82,20 +82,20 @@
  '(backup-directory-alist '((".*" . "/tmp/")) nil nil "Customized with use-package files")
  '(completion-styles '(flex) nil nil "Customized with use-package minibuffer")
  '(custom-safe-themes
-   '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
+	 '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
  '(lsp-enable-snippet nil)
  '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
  '(package-selected-packages
-   '(flycheck-ledger ledger-mode vue-mode protobuf-mode go-mode git-timemachine terraform-mode haml-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+	 '(gotest flycheck-ledger ledger-mode vue-mode protobuf-mode go-mode git-timemachine terraform-mode haml-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
-   '((rspec-command-options . "--fail-fast")
-     (flycheck-checker quote ruby-rubocop)
-     (flycheck-checker . "ruby-rubocop")
-     (rspec-use-docker-when-possible . t)
-     (rspec-use-bundler-when-possible)
-     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+	 '((rspec-command-options . "--fail-fast")
+		 (flycheck-checker quote ruby-rubocop)
+		 (flycheck-checker . "ruby-rubocop")
+		 (rspec-use-docker-when-possible . t)
+		 (rspec-use-bundler-when-possible)
+		 (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(select-enable-clipboard t nil nil "Customized with use-package select")
  '(warning-suppress-types '((comp))))
 (custom-set-faces
@@ -164,7 +164,8 @@
   :hook (prog-mode . fira-code-mode))
 
 (use-package flycheck
-  :hook (ledger-mode . flycheck-mode))
+  :hook (ledger-mode . flycheck-mode)
+  :config (flycheck-add-next-checker 'ruby-standard 'ruby-rubocop))
 
 (use-package flycheck-ledger
   :after ledger-mode)
@@ -298,7 +299,7 @@
 
 (use-package lsp-mode
   :hook ((ruby-mode . lsp)
-	 (go-mode . lsp)
+				 (go-mode . lsp)
          (lsp-mode . lsp-enable-which-key-integration))
   :commands lsp
   :custom (lsp-headerline-breadcrumb-enable . nil))
@@ -330,6 +331,19 @@
   :custom (dap-ruby-debug-program '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
   :config
   (dap-ruby-setup))
+
+;; Golang
+(use-package go-mode
+	:config (add-hook 'before-save-hook 'gofmt-before-save)
+  :custom (tab-width 2)
+	(compile-command "go build -v && go test -v && go vet"))
+
+(use-package gotest
+	:bind (:map go-mode-map
+							(("C-c , s" . go-test-current-test)
+							 ("C-c , v" . go-test-current-file)
+							 ("C-c , a" . go-test-current-project))
+							))
 
 (use-package graphql-mode
   :diminish
