@@ -82,7 +82,7 @@
  '(backup-directory-alist '((".*" . "/tmp/")) nil nil "Customized with use-package files")
  '(completion-styles '(flex) nil nil "Customized with use-package minibuffer")
  '(custom-safe-themes
-   '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
+	 '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
  '(ledger-reports
    '(("bal -V" "ledger ")
@@ -169,7 +169,8 @@
   :hook (prog-mode . fira-code-mode))
 
 (use-package flycheck
-  :hook (ledger-mode . flycheck-mode))
+  :hook (ledger-mode . flycheck-mode)
+  :config (flycheck-add-next-checker 'ruby-standard 'ruby-rubocop))
 
 (use-package flycheck-ledger
   :after ledger-mode)
@@ -303,7 +304,7 @@
 
 (use-package lsp-mode
   :hook ((ruby-mode . lsp)
-	 (go-mode . lsp)
+				 (go-mode . lsp)
          (lsp-mode . lsp-enable-which-key-integration))
   :commands lsp
   :custom (lsp-headerline-breadcrumb-enable . nil)
@@ -337,6 +338,19 @@
   :custom (dap-ruby-debug-program '("node" "/Users/carl/.emacs.d/.extension/vscode/rebornix.Ruby/extension/dist/debugger/main.js"))
   :config
   (dap-ruby-setup))
+
+;; Golang
+(use-package go-mode
+	:config (add-hook 'before-save-hook 'gofmt-before-save)
+  :custom (tab-width 2)
+	(compile-command "go build -v && go test -v && go vet"))
+
+(use-package gotest
+	:bind (:map go-mode-map
+							(("C-c , s" . go-test-current-test)
+							 ("C-c , v" . go-test-current-file)
+							 ("C-c , a" . go-test-current-project))
+							))
 
 (use-package graphql-mode
   :diminish
