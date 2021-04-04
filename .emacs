@@ -94,7 +94,7 @@
  '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
  '(package-selected-packages
-   '(company-ledger flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company rspec-mode gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+   '(ruby-test-mode company-ledger flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
    '((rspec-use-bundler-when-possible)
      (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
@@ -299,14 +299,16 @@
 
 ;; - LSP
 ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
-(setq lsp-keymap-prefix "s-l")
+(setq lsp-keymap-prefix "C-x l")
 
 (use-package lsp-mode
   :hook ((ruby-mode . lsp)
 	 (go-mode . lsp)
          (lsp-mode . lsp-enable-which-key-integration))
   :commands lsp
-  :custom (lsp-headerline-breadcrumb-enable . nil))
+  :custom (lsp-headerline-breadcrumb-enable . nil)
+  (lsp-solargraph-autoformat t)
+  (lsp-solargraph-formatting t))
 
 (use-package lsp-ui :commands lsp-ui-mode)
 
@@ -426,7 +428,6 @@
 	   :useBundler "true"
 	   :debuggerPort "1235")))
   :bind (:map ruby-mode-map
-;              ("C-c f" . lsp-format-buffer)
               ("C-c d t" . dap-debug-edit-template)
               ("C-c d d" . dap-debug)
 	      ("C-c d h" . dap-hydra)
