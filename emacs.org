@@ -1,0 +1,660 @@
+To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
+
+* Intro
+  Having been there and back again when it comes to various Emacs
+  distributions and configuration methods I'm coming back to literate
+  configuration. It feels as though I have atrophied and am not
+  utilizing my editor fully, especially not org mode.
+
+  Well, I can edit this a bit later. For now, on to the configuration.
+
+  
+** How to do literate configuration?
+   It's entirely done with tangle and source blocks. 
+
+   The other trick to doing literate is to use =noweb= to organize
+   code snippets into the target file, so that you aren't forced to
+   organize your document based on the structure of the eventual code
+   file.
+   #+begin_example
+     ,#+begin_src elisp :tangle ~/.config/emacs/init.el :mkdirp yes :noweb yes
+       <<bootstrapping>>
+     ,#+end_src
+   #+end_example
+** Noweb Header Arg
+   You can make all source blocks in a heading tangle together by
+   placing a property in the Properties drawer. Invoke =C-c C-x p=
+   and enter:
+   #+begin_example
+     :header-args: :noweb-ref reference-name
+   #+end_example
+
+* Disable packages on startup
+  First of all, let's disable loading all available packages at
+  startup. This has to be done in the early-init file so we're making
+  an exception to the =noweb-ref= so that it doesn't get blended into
+  the main init file.
+  PROBLEM: If I do this, then none of my packages are on the load
+  path, so it's impossible to proceed and use other packages.
+
+  #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
+    ;; (setq package-enable-at-startup nil)
+  #+end_src
+
+* Scaffolding the init file
+  Here's the layout for the init file
+
+  #+begin_src elisp :tangle ~/.config/emacs/init.el :mkdirp yes :noweb yes :no-export yes
+    <<initialization-performance>>
+
+    <<bootstrapping>>
+
+    <<user-interface>>
+
+    <<programming-general>>
+
+    <<org-mode>>
+
+    <<docker>>
+  #+end_src
+  
+* Initialization Performance Tuning
+  :PROPERTIES:
+  :header-args: :noweb-ref initialization-performance
+  :END:
+  These are some arcana picked up from other initializations that
+  help with startup speed.
+
+  Let's set up a little scaffolding:
+  #+begin_src elisp :noweb yes :no-export yes
+    <<file-name-handler-alist-old>>
+
+    (setq
+     <<performance-tuning-before>>
+     )
+
+    (add-hook 'after-init-hook
+	      `(lambda ()
+		 (setq
+		  <<performance-tuning-after>>
+		  )
+		 (garbage-collect)) t)
+  #+end_src
+   
+** =file-name-handler-alist=
+   At initialization, this variable holds several complex regular
+   expressions that are evaluated on all file loading to determine if
+   they should go through a special handler function. During
+   initialization we don't want this so we first define a variable
+   and store it.
+   #+begin_src elisp :noweb-ref file-name-handler-alist-old
+     (defvar file-name-handler-alist-old file-name-handler-alist)
+   #+end_src
+
+   Then set it to nil before init
+   #+begin_src elisp :noweb-ref performance-tuning-before
+     file-name-handler-alist nil
+   #+end_src
+
+   And set it back after init
+   #+begin_src elisp :noweb-ref performance-tuning-after
+     file-name-handler-alist file-name-handler-alist-old
+   #+end_src
+
+** =gc-cons-threshold=
+   During startup, don't bother garbage collecting. Instead, set the
+   threshold way high. Like 4 gigabytes.
+
+   #+begin_src elisp :noweb-ref performance-tuning-before
+     gc-cons-threshold (* 4 1024 1024 1024)
+     gc-cons-percentage 0.6
+   #+end_src
+   Afterward, let's garbage-collect every 100MB.
+   #+begin_src elisp :noweb-ref performance-tuning-after
+     gc-cons-threshold (* 100 1024 1024)
+     gc-cons-percentage 0.5
+   #+end_src
+   
+** =read-process-output-max=
+   This affects how many bites to read from the subprocess in a single
+   chunk. It defaults to 4kB, so let's up it to 1mB because we have a
+   big computer.
+   #+begin_src elisp :noweb-ref performance-tuning-after
+     read-process-output-max (* 1024 1024)
+   #+end_src
+   
+* Bootstrapping
+  :PROPERTIES:
+  :header-args: :noweb-ref bootstrapping
+  :END:
+  I will be using one fancy package management framework, the
+  excellent [[https://github.com/jwiegley/use-package][use-package]] from [[https://github.com/jwiegley][John Wiegley]]. I'm also going to borrow
+  some of his example emacs initialization from his [[https://github.com/jwiegley/dot-emacs][dot-emacs]]
+  repository, but only a bit.
+
+** Set up MELPA and ORG package archives
+   #+begin_src elisp :noweb yes :no-export yes
+     (require 'package)
+     (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+     <<package-archives>>
+
+   #+end_src
+
+** Install use-package if it isn't installed.
+   #+begin_src elisp
+     (unless (package-installed-p 'use-package)
+       (progn
+	 (package-refresh-contents)
+	 (package-install 'use-package)))
+     (eval-when-compile (require 'use-package))
+     (require 'bind-key)
+   #+end_src
+
+** Automatically install packages mentioned by use-package
+   #+begin_src elisp
+     (require 'use-package-ensure)
+     (setq use-package-always-ensure t
+	   use-package-always-defer t)
+   #+end_src
+
+** And automatically update packages
+   #+begin_src elisp
+     (use-package auto-package-update
+       :ensure t
+       :config
+       (setq auto-package-update-delete-old-versions t)
+       (setq auto-package-update-hide-results t)
+       (auto-package-update-maybe))
+   #+end_src
+
+** Ensure that our exec path is configured
+   Emacs looks in the =exec-path= for binaries when invoking a shell
+   command. For better or worse we do still do much of our work with a
+   real shell, and not within the confines of emacs, so as a shortcut
+   we can configure the exec-path by using this helpful package, which
+   spawns a shell process and dumps the path.
+   #+begin_src elisp :noweb yes :no-export yes
+     (use-package exec-path-from-shell
+       :demand t
+       :config
+       (exec-path-from-shell-initialize)
+       <<exec-path-from-shell-config>>
+       )
+   #+end_src
+   
+** Copy some environment variables, if they are present
+   There are some secrets that I configure in my =.zshrc= that I
+   sometimes need in my eshell.
+   #+begin_src elisp :noweb-ref exec-path-from-shell-config
+     (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_ENTERPRISE__CONTRIBSYS__COM"))
+   #+end_src
+
+* General User Interface
+  :PROPERTIES:
+  :header-args: :noweb-ref user-interface
+  :END:
+  Emacs' user interface is a bit dated looking and distracting, so I
+  apply some small modifications to clean things up.
+  
+** Disable =scroll-bar=mode=
+   This specifies whether to have any scroll bars.
+   #+begin_src elisp
+     (scroll-bar-mode 0)
+   #+end_src
+
+** Disable =menu-bar-mode=
+   This affects whether emacs populates the menu bar in operating
+   systems that support it.
+   #+begin_src elisp
+     (menu-bar-mode 0)
+   #+end_src
+
+** Disable =tool-bar-mode=
+   And this one affects whether the 'tool bar' appears, which is an
+   iconic interface along the top of a frame.
+   #+begin_src elisp
+     (tool-bar-mode 0)
+   #+end_src
+
+** Set =visible-bell=
+   Instead of issuing a system beep, use visible bell, which flashes
+   the frame when a bell occurs. Test by smashing =C-g=
+   #+begin_src elisp
+     (setq visible-bell 1)
+   #+end_src
+
+** Font: Fira Code
+   Pretty much my favorite font for programming right now. Has the
+   most ligatures and is quite well supported across platforms.
+   #+begin_src elisp
+     (use-package faces
+       :ensure nil
+       :config
+       ;; Set my preferred font.
+       (set-face-font 'default "Fira Code-14"))
+   #+end_src
+
+** Disable the Customize interface updating my emacs file
+   I like to know how and why various things are being set in my emacs
+   files and therefore avoid the =customize-*= stuff that
+   automatically updates my emacs init file.
+   #+begin_src elisp
+     (setq-default custom-file null-device)
+   #+end_src
+
+** Pulse
+   In order to find the cursor whenever moving between regions, use
+   the built-in pulse mode. 
+   #+begin_src elisp
+     (use-package pulse
+       :ensure nil
+       :config
+       (defun pulse-line (&rest _)
+	 "Pulse the current line."
+	 (pulse-momentary-highlight-one-line (point)))
+       (dolist (command '(scroll-up-command scroll-down-command recenter-top-bottom other-window))
+	 (advice-add command :after #'pulse-line)))
+   #+end_src
+
+** =diminish=
+   Allows us to hide minor modes cluttering up our mode line.
+   #+begin_src elisp
+     (use-package diminish :demand t)
+   #+end_src
+   
+** which-key help me remember which key to press
+   #+begin_src elisp
+     (use-package which-key
+       :diminish
+       :demand t
+       :commands which-key-mode
+       :config
+       (which-key-mode))
+   #+end_src
+
+** Swiper/Ivy/Counsel autocompletion frameworks
+   I'm leaving Helm behind to try a simpler autocompletion framework.
+   *Troubleshooting*: I had to move the =ivy-re-builders-alist= into the config block, because it seems as though some other part of startup was setting a default on first evaluation.
+   #+begin_src elisp
+     (use-package ivy
+       :demand t
+       :ensure counsel
+       :diminish ivy-mode
+       :custom
+       (ivy-use-virtual-buffers t)
+       (ivy-count-format "(%d/%d) ")
+       :config
+       (ivy-mode 1)
+       (setq ivy-re-builders-alist
+        '((t . ivy--regex-plus)))
+       )
+   #+end_src
+
+   Counsel-mode configures a lot of global bindings nicely.
+   #+begin_src elisp
+     (use-package counsel
+       :diminish counsel-mode
+       :demand t
+       :config (counsel-mode 1))
+   #+end_src
+
+   And incremental search with swiper-isearch
+   #+begin_src elisp
+     (use-package swiper
+       :bind ("C-s" . swiper-isearch)
+       )
+   #+end_src
+   In order to edit the ivy buffer
+   #+begin_src elisp
+     (use-package wgrep)
+   #+end_src
+
+** Disable Auto-save and tempfiles
+   #+begin_src elisp
+     (use-package files
+       :ensure nil
+       :custom (backup-directory-alist `((".*" . ,temporary-file-directory)))
+       (auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+       (make-backup-files nil))
+   #+end_src
+
+** Searching with the =ag= package
+   The silver searcher is a great way to do full-text search across a
+   code repository.
+   #+begin_src elisp
+     (use-package ag :demand t)
+   #+end_src
+
+** Silencing noisy warnings
+#+begin_src elisp
+  (use-package warnings
+    :ensure nil
+    :custom (warning-minimum-level :error))
+#+end_src
+
+* Programming
+  :PROPERTIES:
+  :header-args: :noweb-ref programming-general
+  :END:
+All programming mode enhancements.
+** Minor Tweaks
+Show Paren mode is always useful and built-in.
+#+begin_src elisp
+  (use-package paren
+    :ensure nil
+    :hook (prog-mode . show-paren-mode))
+#+end_src
+
+** Projectile
+   An eminently useful way to navigate git-based project directories.
+   #+begin_src elisp
+     (use-package projectile
+       :diminish
+       :init (projectile-mode +1)
+       :bind-keymap (("C-c p" . projectile-command-map))
+       :custom
+       (projectile-enable-caching t))
+   #+end_src
+
+   And let's get the counsel integration support in.
+   #+begin_src elisp
+     (use-package counsel-projectile
+       :diminish
+       :after projectile
+       :init (counsel-projectile-mode 1))
+   #+end_src
+
+** Magit the magic git porcelain
+   Really there are few things more awesome than the power of Magit in
+   experienced hands. It's like vim for git repositories.
+   #+begin_src elisp
+     (use-package magit
+       :bind (("C-x g" . magit-status)))
+   #+end_src
+
+** LSP mode
+   For better or worse it seems as though the LSP is the universal
+   means to get awesome support for multiple languages in emacs.
+   #+begin_src elisp :noweb yes :no-export yes
+     (use-package lsp-mode
+       :hook
+       ((lsp-mode . lsp-enable-which-key-integration)
+        <<lsp-mode-hooks>>
+        )
+       :commands lsp
+       :custom
+       (lsp-keymap-prefix "C-c l")
+       <<lsp-mode-custom>>
+       :config
+       <<lsp-mode-config>>
+       )
+
+     (use-package lsp-ui  :commands lsp-ui-mode)
+     (use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+   #+end_src
+   
+** YAML
+#+begin_src elisp
+  (use-package yaml-mode)
+#+end_src
+
+** Dockerfiles
+#+begin_src elisp
+  (use-package dockerfile-mode)
+#+end_src
+** Ruby
+   All my favorite ruby programming configuration.
+*** Enable LSP
+    Let's turn on the language server for ruby.
+    #+begin_src elisp :noweb-ref lsp-mode-hooks
+      (ruby-mode . lsp)
+    #+end_src
+
+    And customize it
+    #+begin_src elisp :noweb-ref lsp-mode-custom
+      (lsp-solargraph-autoformat t)
+      (lsp-solargraph-use-bundler t)
+    #+end_src
+** HAML
+#+begin_src elisp
+  (use-package haml-mode)
+#+end_src
+** Javascript
+#+begin_src elisp
+  (use-package js
+    :ensure nil
+    :custom
+    (js-indent-level 2))
+#+end_src
+** Vue.js
+#+begin_src elisp
+  (use-package vue-mode)
+#+end_src
+
+* Org Mode
+  :PROPERTIES:
+  :header-args: :noweb-ref org-mode
+  :END:
+  Emacs org mode is a fantastic way to organize oneself. I've been
+  using it for over a year and want to deepen my investment in org
+  mode and org roam.
+** Org
+   So org is built into emacs, but the version that is included with
+   gnu emacs is somewhat old. The latest and greatest org comes from
+   the org repository.
+
+   #+begin_src elisp :noweb-ref package-archives
+     (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
+   #+end_src
+
+   #+begin_src elisp :noweb yes :no-export yes
+     (use-package org
+       :pin org
+       :diminish
+       :bind (("C-c l" . org-store-link)
+              ("C-c a" . org-agenda)
+              ("C-c c" . org-capture))
+       :custom
+       (org-export-backends '(ascii html md))
+       <<org-custom>>
+       :config
+       <<org-config>>
+     )
+   #+end_src
+
+   Org-indent mode indents org documents based on the heirarchical
+   depth.
+
+   #+begin_src elisp
+     (use-package org-indent
+       :ensure org
+       :hook (org-mode . org-indent-mode))
+   #+end_src
+
+   Visual line mode is also helpful when reading documents. It causes
+   lines to wrap around at the edge of the frame, and the editing
+   commands operate on visual lines, not logical lines.
+
+   #+begin_src elisp
+     (use-package simple
+       :ensure nil
+       :hook (org-mode . visual-line-mode))
+   #+end_src
+
+   Finally, mixed-pitch mode modifies the buffer such that lines can
+   have fonts of varying pitch, which helps with readability and makes
+   Org look better.
+   #+begin_src elisp
+     (use-package mixed-pitch
+       :hook (org-mode . mixed-pitch-mode))
+   #+end_src
+*** Org Customization
+    :PROPERTIES:
+    :header-args: :noweb-ref org-custom
+    :END:
+    Org looks nicer when italicized, bold, links and other things are
+    formatted and prettified.
+    #+begin_src elisp
+      (org-hide-emphasis-markers t)
+      (org-pretty-entities t)
+    #+end_src
+
+    For a while I was doing math notes and embedding latex in my
+    org. That was cool, and I ended up doing this arcane stuff to make
+    my rendered latex snippets look awesome.
+
+    #+begin_src elisp
+      (org-format-latex-options '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 2 :matchers
+					      ("begin" "$1" "$" "$$" "\\(" "\\[")))
+    #+end_src
+
+    And for my org agenda, we'll keep those files in =~/org/agenda=, but we'll also capture todos from =~/org/journal=
+    #+begin_src elisp
+      (org-agenda-files '("~/org/agenda/" "~/org/journal/"))
+    #+end_src
+*** Org-Babel
+:PROPERTIES:
+:header-args: :noweb-ref org-config
+:END:
+    Let's activate ditaa drawings in org
+    #+begin_src elisp
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       '((ditaa . t)))
+    #+end_src
+
+    And make org babel stop asking to confirm code eval
+    #+begin_src elisp :noweb-ref org-custom
+      (org-confirm-babel-evaluate nil)
+    #+end_src
+** Beamer Presentations
+Why use powerpoint or something for presentations when you can do all of it in org?
+Reference: [[https://github.com/fniessen/refcard-org-beamer]]
+
+#+begin_src elisp
+  (use-package ox-latex
+    :ensure org ;; Part of the Org package
+    :custom (org-latex-listings t)
+    :config
+    (add-to-list 'org-latex-classes
+                 `("beamer"
+                   ,(concat "\\documentclass[presentation]{beamer}\n"
+                            "[DEFAULT-PACKAGES]"
+                            "[PACKAGES]"
+                            "[EXTRA]\n")
+                   ("\\section{%s}" . "\\section*{%s}")
+                   ("\\subsection{%s}" . "\\subsection*{%s}")
+                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
+#+end_src
+*** Authoring Presentations
+The title page will have the following elements from document
+keywords. Org adds the comma in the front to keep the example from mixing
+up the parsing.
+#+begin_example
+  ,#+TITLE: Document title
+  ,#+AUTHOR: Carl Thuringer
+  ,#+DATE: 2021-3-24
+#+end_example
+** Org Roam
+The second part of the ultimate org setup, a hypertext database of
+project notes. That's [[https://www.orgroam.com/][org-roam]].
+
+#+begin_src elisp
+  (use-package org-roam
+    :diminish
+    :hook
+    (after-init . org-roam-mode)
+    :custom
+    (org-roam-directory "~/org/roam/")
+    (org-roam-buffer-position 'bottom)
+    (org-roam-index-file "~/org/roam/index.org")
+    :bind (:map org-roam-mode-map
+                (("C-c n l" . org-roam)
+                 ("C-c n f" . org-roam-find-file)
+                 ("C-c n j" . org-roam-jump-to-index)
+                 ("C-c n b" . org-roam-switch-to-buffer)
+                 ("C-c n g" . org-roam-graph))
+                :map org-mode-map
+                (("C-c n i" . org-roam-insert))))
+#+end_src
+** Org Journal
+One thing I've noticed with using =org-roam-dailies= is that I create a bunch of daily journal entries but then never revisit them. In fact it's not very useful for just capturing how I'm feeling or browsing back through the days. I found myself starting to link to other roam documents from the journal, and even then didn't find it super useful to check the daily backlinks. Really I want my journal to be browseable, and so I think the best way to represent the journal is in a continuous text file.
+
+Therefore I happened upon [[https://github.com/bastibe/org-journal][org-journal]], which seems to do exactly what I want.
+
+I will configure org-journal to place my journals in =~/org/journal=, and use a yearly file format.
+#+begin_src elisp :noweb yes :no-export yes
+  (use-package org-journal
+    :demand t
+    :commands (org-journal-new-entry)
+    :bind ("C-c C-j" . org-journal-new-entry)
+    :custom
+    (org-journal-dir "~/org/journal")
+    (org-journal-file-type 'yearly)
+    (org-journal-file-format "%Y.org")
+    (org-journal-date-format "%A, %Y-%m-%d")
+    :preface
+    <<org-journal-preface>>
+    :bind
+    <<org-journal-bind>>
+    )
+#+end_src
+*** Close Org Journal when I save the entry (like org-capture)
+This is a neat snippet found on the github page for org-journal:
+#+begin_src elisp :noweb-ref org-journal-preface
+  (defun crt/org-journal-save-entry-and-exit()
+    "Simple convenience function.
+    Saves the buffer of the current day's entry and kills the window
+    Similar to org-capture like behavior"
+    (interactive)
+    (save-buffer)
+    (kill-buffer-and-window))
+#+end_src
+
+#+begin_src elisp :noweb-ref org-journal-bind
+  (:map org-journal-mode-map
+        ("C-x C-s" . crt/org-journal-save-entry-and-exit))
+#+end_src
+
+* Docker
+:PROPERTIES:
+:header-args: :noweb-ref docker
+:END:
+I often work inside docker containers, either on my personal devices
+or on work devices. When I'm doing such, I end up in a tricky
+situation where I cannot seamlessly operate the development
+environment in emacs because, for example, the database is only
+exposed in docker and I cannot run ruby tests without the database.
+
+** Tramp
+I tried using some docker-tramp elisp directly but it wasn't working,
+so I checked jwiegley's init and borrowed what he's doing there.
+#+begin_src elisp
+  (use-package docker-tramp
+    :custom
+    (docker-tramp-use-names t))
+  (use-package counsel-tramp :commands counsel-tramp)
+  (use-package tramp :ensure nil
+    :config
+    ;; jww (2018-02-20): Without this change, tramp ends up sending hundreds of
+    ;; shell commands to the remote side to ask what the temporary directory is.
+    (put 'temporary-file-directory 'standard-value '("/tmp"))
+    (setq tramp-auto-save-directory "~/.cache/emacs/backups"
+          tramp-persistency-file-name "~/.emacs.d/data/tramp")
+    )
+
+#+end_src
+
+** TODO Ruby over Tramp
+This gets a little hairy, so according to
+https://emacs-lsp.github.io/lsp-mode/page/remote/ we have to register
+a client for each mode.
+Unfortunatley this doens't work... I can't get it to detect the remote solargraph
+#+begin_src elisp :noweb-ref lsp-mode-config
+  ;; (lsp-register-client
+  ;;  (make-lsp-client :new-connection (lsp-tramp-connection "solargraph")
+  ;;                   :major-modes '(ruby-mode)
+  ;;                   :remote? t
+  ;;                   :server-id 'rubyls-remote))
+#+end_src
+
