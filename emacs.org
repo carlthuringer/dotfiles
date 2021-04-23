@@ -34,11 +34,12 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
   startup. This has to be done in the early-init file so we're making
   an exception to the =noweb-ref= so that it doesn't get blended into
   the main init file.
-  PROBLEM: If I do this, then none of my packages are on the load
-  path, so it's impossible to proceed and use other packages.
+  # PROBLEM: If I do this, then none of my packages are on the load
+  # path, so it's impossible to proceed and use other packages.
+  Solution: Use straight.el, and it tells me to do this.
 
   #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
-    ;; (setq package-enable-at-startup nil)
+    (setq package-enable-at-startup nil)
   #+end_src
 
 * Scaffolding the init file
@@ -132,39 +133,36 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
   some of his example emacs initialization from his [[https://github.com/jwiegley/dot-emacs][dot-emacs]]
   repository, but only a bit.
 
-** Set up MELPA and ORG package archives
-   #+begin_src elisp :noweb yes :no-export yes
-     (require 'package)
-     (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-     <<package-archives>>
-
+  UPDATE: use-package isn't really a package manager, it's a package
+  configurere, and as such it isn't very good at complicated package
+  installation concerns. So we'll defer package management to [[https://github.com/raxod502/straight.el#integration-with-use-package-1][straight.el]].
+   
+** Bootstrap =straight.el=
+   #+begin_src elisp
+     (defvar bootstrap-version)
+     (let ((bootstrap-file
+	    (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+	   (bootstrap-version 5))
+       (unless (file-exists-p bootstrap-file)
+	 (with-current-buffer
+	     (url-retrieve-synchronously
+	      "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+	      'silent 'inhibit-cookies)
+	   (goto-char (point-max))
+	   (eval-print-last-sexp)))
+       (load bootstrap-file nil 'nomessage))
    #+end_src
 
 ** Install use-package if it isn't installed.
    #+begin_src elisp
-     (unless (package-installed-p 'use-package)
-       (progn
-	 (package-refresh-contents)
-	 (package-install 'use-package)))
-     (eval-when-compile (require 'use-package))
+     (straight-use-package 'use-package)
      (require 'bind-key)
    #+end_src
 
 ** Automatically install packages mentioned by use-package
    #+begin_src elisp
-     (require 'use-package-ensure)
-     (setq use-package-always-ensure t
-	   use-package-always-defer t)
-   #+end_src
-
-** And automatically update packages
-   #+begin_src elisp
-     (use-package auto-package-update
-       :ensure t
-       :config
-       (setq auto-package-update-delete-old-versions t)
-       (setq auto-package-update-hide-results t)
-       (auto-package-update-maybe))
+		 (setq straight-use-package-by-default t)
+		 (setq use-package-always-defer t)
    #+end_src
 
 ** Ensure that our exec path is configured
@@ -228,7 +226,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    most ligatures and is quite well supported across platforms.
    #+begin_src elisp
      (use-package faces
-       :ensure nil
+       :straight nil
        :config
        ;; Set my preferred font.
        (set-face-font 'default "Fira Code-14"))
@@ -247,7 +245,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    the built-in pulse mode. 
    #+begin_src elisp
      (use-package pulse
-       :ensure nil
+       :straight nil
        :config
        (defun pulse-line (&rest _)
 	 "Pulse the current line."
@@ -278,7 +276,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+begin_src elisp
      (use-package ivy
        :demand t
-       :ensure counsel
+       :straight counsel
        :diminish ivy-mode
        :custom
        (ivy-use-virtual-buffers t)
@@ -312,7 +310,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 ** Disable Auto-save and tempfiles
    #+begin_src elisp
      (use-package files
-       :ensure nil
+       :straight nil
        :custom (backup-directory-alist `((".*" . ,temporary-file-directory)))
        (auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
        (make-backup-files nil))
@@ -328,7 +326,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 ** Silencing noisy warnings
 #+begin_src elisp
   (use-package warnings
-    :ensure nil
+    :straight nil
     :custom (warning-minimum-level :error))
 #+end_src
 
@@ -341,8 +339,15 @@ All programming mode enhancements.
 Show Paren mode is always useful and built-in.
 #+begin_src elisp
   (use-package paren
-    :ensure nil
+    :straight nil
     :hook (prog-mode . show-paren-mode))
+#+end_src
+
+And use line numbers
+#+begin_src elisp
+  (use-package linum
+    :straight nil
+    :hook (prog-mode . linum-mode))
 #+end_src
 
 ** Projectile
@@ -371,6 +376,31 @@ Show Paren mode is always useful and built-in.
      (use-package magit
        :bind (("C-x g" . magit-status)))
    #+end_src
+
+** Company the autocompleter
+Company-mode is an autocompletion framework used happily by many other modes. http://company-mode.github.io/ We can pretty much turn it on for all programming modes, so that's what we will do.
+#+begin_src elisp
+  (use-package company
+    :diminish
+    :hook (prog-mode . company-mode))
+#+end_src
+
+** Flycheck the better checker
+Flymake is built into emacs, but flycheck is better
+#+begin_src elisp
+  (use-package flycheck)
+#+end_src
+
+** Yasnippet
+A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
+
+I kept running into gross issues working with go-mode, since it seems
+to want to use yasnippet when company completes things...
+#+begin_src elisp
+  (use-package yasnippet
+    :hook (prog-mode . yas-minor-mode)
+    )
+#+end_src
 
 ** LSP mode
    For better or worse it seems as though the LSP is the universal
@@ -415,6 +445,13 @@ Show Paren mode is always useful and built-in.
       (lsp-solargraph-autoformat t)
       (lsp-solargraph-use-bundler t)
     #+end_src
+    And by the way, ruby-mode annoyingly inserts this magic comment. STOP
+    #+begin_src elisp
+      (use-package ruby-mode
+        :straight nil
+        :custom
+        (ruby-insert-encoding-magic-comment nil))
+    #+end_src
 ** HAML
 #+begin_src elisp
   (use-package haml-mode)
@@ -422,13 +459,37 @@ Show Paren mode is always useful and built-in.
 ** Javascript
 #+begin_src elisp
   (use-package js
-    :ensure nil
+    :straight nil
     :custom
-    (js-indent-level 2))
+    (js-indent-level 2)
+    (indent-tabs-mode nil))
 #+end_src
 ** Vue.js
 #+begin_src elisp
   (use-package vue-mode)
+#+end_src
+** Golang
+#+begin_src elisp
+  (use-package go-mode
+    :config (add-hook 'before-save-hook #'gofmt-before-save)
+    :custom
+    (tab-width 2)
+    (compile-command "go build -v && go test -v && go vet"))
+
+  (use-package gotest
+    :after go-mode
+    :bind (:map go-mode-map
+                (("C-c C-t n" . go-test-current-test)
+                 ("C-c C-t f" . go-test-current-file)
+                 ("C-c C-t a" . go-test-current-project))
+                )
+    )
+#+end_src
+
+And to get language server support, install the LSP hook
+
+#+begin_src elisp :noweb-ref lsp-mode-hooks
+  (go-mode . lsp)
 #+end_src
 
 * Org Mode
@@ -440,22 +501,16 @@ Show Paren mode is always useful and built-in.
   mode and org roam.
 ** Org
    So org is built into emacs, but the version that is included with
-   gnu emacs is somewhat old. The latest and greatest org comes from
-   the org repository.
-
-   #+begin_src elisp :noweb-ref package-archives
-     (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
-   #+end_src
+   gnu emacs is somewhat old.
 
    #+begin_src elisp :noweb yes :no-export yes
      (use-package org
-       :pin org
        :diminish
        :bind (("C-c l" . org-store-link)
               ("C-c a" . org-agenda)
               ("C-c c" . org-capture))
        :custom
-       (org-export-backends '(ascii html md))
+       (org-export-backends '(ascii latex html md))
        <<org-custom>>
        :config
        <<org-config>>
@@ -467,7 +522,7 @@ Show Paren mode is always useful and built-in.
 
    #+begin_src elisp
      (use-package org-indent
-       :ensure org
+       :straight org
        :hook (org-mode . org-indent-mode))
    #+end_src
 
@@ -477,7 +532,7 @@ Show Paren mode is always useful and built-in.
 
    #+begin_src elisp
      (use-package simple
-       :ensure nil
+       :straight nil
        :hook (org-mode . visual-line-mode))
    #+end_src
 
@@ -517,10 +572,13 @@ Show Paren mode is always useful and built-in.
 :header-args: :noweb-ref org-config
 :END:
     Let's activate ditaa drawings in org
-    #+begin_src elisp
+    #+begin_src elisp :noweb yes :no-export yes
       (org-babel-do-load-languages
        'org-babel-load-languages
-       '((ditaa . t)))
+       '(
+         (ditaa . t)
+         <<org-babel-load-languages>>
+         ))
     #+end_src
 
     And make org babel stop asking to confirm code eval
@@ -533,7 +591,7 @@ Reference: [[https://github.com/fniessen/refcard-org-beamer]]
 
 #+begin_src elisp
   (use-package ox-latex
-    :ensure org ;; Part of the Org package
+    :straight org ;; Part of the Org package
     :custom (org-latex-listings t)
     :config
     (add-to-list 'org-latex-classes
@@ -587,7 +645,7 @@ I will configure org-journal to place my journals in =~/org/journal=, and use a 
   (use-package org-journal
     :demand t
     :commands (org-journal-new-entry)
-    :bind ("C-c C-j" . org-journal-new-entry)
+    :bind ("C-c c" . org-journal-new-entry)
     :custom
     (org-journal-dir "~/org/journal")
     (org-journal-file-type 'yearly)
@@ -615,7 +673,40 @@ This is a neat snippet found on the github page for org-journal:
   (:map org-journal-mode-map
         ("C-x C-s" . crt/org-journal-save-entry-and-exit))
 #+end_src
+** Latex
+It's helpful to embed latex formulas sometimes when writing in org
+#+begin_src elisp
+  (use-package cdlatex)
+  (use-package auctex)
+  (use-package company-auctex)
+#+end_src
+** Gnuplot
+Lets us do something cool with org tables: Plot them in gnuplot
+#+begin_example
+  ,#+PLOT: title:"Citas" ind:1 deps:(3) type:2d with:histograms set:"yrange [0:]"
+  | Sede      | Max cites | H-index |
+  |-----------+-----------+---------|
+  | Chile     |    257.72 |   21.39 |
+  | Leeds     |    165.77 |   19.68 |
+  | Sao Paolo |     71.00 |   11.50 |
+  | Stockholm |    134.19 |   14.33 |
+  | Morelia   |    257.56 |   17.67 |
+#+end_example
 
+#+begin_src elisp
+  (use-package gnuplot)
+  (use-package gnuplot-mode)
+#+end_src
+
+And let's also enable org-babel plotting.
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (gnuplot . t)
+#+end_src
+** Ascii art
+Artist mode is pretty neat, but for real whiz-bang:
+#+begin_src elisp
+  (use-package ascii-art-to-unicode)
+#+end_src
 * Docker
 :PROPERTIES:
 :header-args: :noweb-ref docker
@@ -634,7 +725,7 @@ so I checked jwiegley's init and borrowed what he's doing there.
     :custom
     (docker-tramp-use-names t))
   (use-package counsel-tramp :commands counsel-tramp)
-  (use-package tramp :ensure nil
+  (use-package tramp :straight nil
     :config
     ;; jww (2018-02-20): Without this change, tramp ends up sending hundreds of
     ;; shell commands to the remote side to ask what the temporary directory is.
