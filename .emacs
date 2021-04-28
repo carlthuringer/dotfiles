@@ -85,19 +85,19 @@
 	 '("a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default))
  '(helm-completion-style 'emacs)
  '(ledger-reports
-   '(("bal -V" "ledger ")
-     ("bal" "%(binary) -f %(ledger-file) bal")
-     ("reg" "%(binary) -f %(ledger-file) reg")
-     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-     ("account" "%(binary) -f %(ledger-file) reg %(account)")))
+	 '(("bal -V" "ledger ")
+		 ("bal" "%(binary) -f %(ledger-file) bal")
+		 ("reg" "%(binary) -f %(ledger-file) reg")
+		 ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+		 ("account" "%(binary) -f %(ledger-file) reg %(account)")))
  '(lsp-enable-snippet nil)
  '(make-backup-files nil nil nil "Customized with use-package files")
  '(org-journal-dir "~/org/")
  '(package-selected-packages
-   '(ruby-test-mode company-ledger flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
+	 '(go-mode ruby-test-mode company-ledger flycheck-ledger ledger-mode lsp-ui lsp-mode docker-tramp docker forge plantuml-mode dumb-jump helm-lsp restclient org-present graphviz-dot-mode jest-test-mode beacon transient-dwim cdlatex company-auctex auctex diminish smart-mode-line isolate mixed-pitch company-org-roam org-roam visual-fill-column iedit nvm helm-tramp default-text-scale prettier-js typescript-mode flycheck yaml-mode inf-ruby helm-ag expand-region company gnu-elpa-keyring-update dap-mode markdown-mode dockerfile-mode magit exec-path-from-shell solarized-theme helm-projectile projectile helm-ls-git helm which-key use-package))
  '(safe-local-variable-values
-   '((rspec-use-bundler-when-possible)
-     (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
+	 '((rspec-use-bundler-when-possible)
+		 (prettier-js-args "--single-quote" "--trailing-comma" "all" "--no-semi")))
  '(select-enable-clipboard t nil nil "Customized with use-package select")
  '(warning-suppress-types '((comp))))
 (custom-set-faces
@@ -413,7 +413,7 @@
   :defer 5
   :diminish
   :hook (prog-mode . projectile-mode)
-  :bind-keymap (("s-p" . projectile-command-map))
+  :bind-keymap (("C-c p" . projectile-command-map))
   :custom (projectile-completion-system 'helm)
   (projectile-enable-caching t)
   :preface
@@ -447,6 +447,9 @@
 	      ("C-c d h" . dap-hydra)
 	      ("C-c , , s" . my-dap-debug-rspec-at-line))
   :custom (ruby-insert-encoding-magic-comment nil))
+
+(use-package ruby-test-mode
+	:bind (:map ruby-test-mode-map ("C-c C-s" . nil)))
 
 (use-package typescript-mode
   :hook ((typescript-mode . lsp))
