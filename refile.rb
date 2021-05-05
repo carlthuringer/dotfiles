@@ -1,5 +1,5 @@
 require 'date'
-year = "2020"
+year = "2021"
 
 org_files = Dir["#{year}-*-*.org"].sort
 

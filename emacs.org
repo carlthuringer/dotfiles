@@ -330,6 +330,17 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
     :custom (warning-minimum-level :error))
 #+end_src
 
+** Theme
+I've always liked solarized. For a while recently I was actually using the default color scheme of emacs, which is quite nice. For now, though, I'll switch to solarized because i want a dark theme.
+#+begin_src elisp
+  (use-package solarized-theme
+    :demand t
+    :requires custom
+    :custom
+    (custom-safe-themes '(solarized-light solarized-dark))
+    :config
+    (load-theme 'solarized-light t))
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
