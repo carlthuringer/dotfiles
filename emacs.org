@@ -361,6 +361,13 @@ And use line numbers
     :hook (prog-mode . linum-mode))
 #+end_src
 
+And trim whitespace
+#+begin_src elisp
+  (use-package ws-butler
+  :hook (prog-mode . ws-butler-mode))
+#+end_src
+
+
 ** Projectile
    An eminently useful way to navigate git-based project directories.
    #+begin_src elisp
@@ -463,6 +470,12 @@ to want to use yasnippet when company completes things...
         :custom
         (ruby-insert-encoding-magic-comment nil))
     #+end_src
+*** Ruby Test Mode
+This is even better than rspec mode for testing ruby, because it works for rspec and minitest.
+#+begin_src elisp
+  (use-package ruby-test-mode
+    :hook (ruby-mode))
+#+end_src
 ** HAML
 #+begin_src elisp
   (use-package haml-mode)
@@ -474,6 +487,11 @@ to want to use yasnippet when company completes things...
     :custom
     (js-indent-level 2)
     (indent-tabs-mode nil))
+#+end_src
+
+also let's enable lsp-mode...
+#+begin_src elisp :noweb-ref lsp-mode-hooks
+  (js-mode . lsp)
 #+end_src
 ** Vue.js
 #+begin_src elisp
@@ -501,6 +519,11 @@ And to get language server support, install the LSP hook
 
 #+begin_src elisp :noweb-ref lsp-mode-hooks
   (go-mode . lsp)
+#+end_src
+** Terraform HCL
+Sometimes I have to work in Terraform files
+#+begin_src elisp
+  (use-package terraform-mode)
 #+end_src
 
 * Org Mode
