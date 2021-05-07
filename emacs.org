@@ -367,7 +367,6 @@ And trim whitespace
   :hook (prog-mode . ws-butler-mode))
 #+end_src
 
-
 ** Projectile
    An eminently useful way to navigate git-based project directories.
    #+begin_src elisp
@@ -488,6 +487,11 @@ This is even better than rspec mode for testing ruby, because it works for rspec
     (js-indent-level 2)
     (indent-tabs-mode nil))
 #+end_src
+Prettier formatting for javascript
+#+begin_src elisp
+  (use-package prettier
+    :hook (js-mode . prettier-mode))
+#+end_src
 
 also let's enable lsp-mode...
 #+begin_src elisp :noweb-ref lsp-mode-hooks
@@ -524,6 +528,11 @@ And to get language server support, install the LSP hook
 Sometimes I have to work in Terraform files
 #+begin_src elisp
   (use-package terraform-mode)
+#+end_src
+** Rest Client
+This is a portable, useful way to use emacs as a REST http client.
+#+begin_src elisp
+  (use-package restclient)
 #+end_src
 
 * Org Mode
