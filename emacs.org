@@ -57,6 +57,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
     <<org-mode>>
 
     <<docker>>
+
+    <<ledger>>
   #+end_src
   
 * Initialization Performance Tuning
@@ -340,6 +342,15 @@ I've always liked solarized. For a while recently I was actually using the defau
     (custom-safe-themes '(solarized-light solarized-dark))
     :config
     (load-theme 'solarized-light t))
+#+end_src
+** Eshell
+In order to use sudo/tramp in eshell nicely, you must update the eshell modules list which doesn't include them by default.
+#+begin_src elisp
+  (use-package esh-module
+    :straight nil
+    :demand t
+    :config
+    (add-to-list 'eshell-modules-list 'eshell-tramp))
 #+end_src
 * Programming
   :PROPERTIES:
@@ -758,5 +769,18 @@ Unfortunatley this doens't work... I can't get it to detect the remote solargrap
   ;;                   :major-modes '(ruby-mode)
   ;;                   :remote? t
   ;;                   :server-id 'rubyls-remote))
+#+end_src
+* Ledger
+:PROPERTIES:
+:header-args: :noweb-ref ledger
+:END:
+Plain Text Accounting with https://www.ledger-cli.org
+#+begin_src elisp
+  (use-package hledger-mode)
+  (use-package flycheck-hledger
+    :after (flycheck ledger-mode)
+    :demand t
+    :hook (hledger-mode . flycheck-mode)
+    )
 #+end_src
 
