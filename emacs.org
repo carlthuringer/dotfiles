@@ -138,6 +138,17 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
   installation concerns. So we'll defer package management to [[https://github.com/raxod502/straight.el#integration-with-use-package-1][straight.el]].
    
 ** Bootstrap =straight.el=
+   TODO: The latest emacs master renamed
+   =comp-deferred-compilation-deny-list= to
+   =native-comp-deferred-compilation-deny-list=, so straight is
+   bugging out. To fix it, let's first alias that back. Maybe soon it
+   will be fixed: https://github.com/raxod502/straight.el/issues/757
+
+   #+begin_src elisp
+     (setq comp-deferred-compilation-deny-list native-comp-deferred-compilation-deny-list)
+   #+end_src
+   
+   
    #+begin_src elisp
      (defvar bootstrap-version)
      (let ((bootstrap-file
