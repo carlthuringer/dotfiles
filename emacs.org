@@ -149,7 +149,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    will be fixed: https://github.com/raxod502/straight.el/issues/757
 
    #+begin_src elisp
-     (setq comp-deferred-compilation-deny-list native-comp-deferred-compilation-deny-list)
+     (if (boundp 'native-comp-deferred-compilation-deny-list)
+         (setq comp-deferred-compilation-deny-list native-comp-deferred-compilation-deny-list))
    #+end_src
    
    
