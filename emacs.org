@@ -59,6 +59,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
     <<docker>>
 
     <<ledger>>
+
+    <<documentation>>
   #+end_src
   
 * Initialization Performance Tuning
@@ -826,4 +828,18 @@ Plain Text Accounting with https://www.ledger-cli.org
     :hook (hledger-mode . flycheck-mode)
     )
 #+end_src
+* Documentation
+  :PROPERTIES:
+  :header-args: :noweb-ref documentation
+  :END:
+** PlantUML Mode
+   https://plantuml.com/ is a gross-looking but powerful language for
+   markup. Lately it has become a lot less gross but the website is
+   still stuffed with ads.
+
+   #+begin_src elisp
+     (use-package plantuml-mode
+       :magic ("%PUML" . plantuml-mode)
+       )
+   #+end_src
 
