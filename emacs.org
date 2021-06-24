@@ -558,6 +558,9 @@ Sometimes I have to work in Terraform files
 This is a portable, useful way to use emacs as a REST http client.
 #+begin_src elisp
   (use-package restclient)
+  (use-package cl-lib)
+  (use-package jq-mode
+    :demand t)
 #+end_src
 
 * Org Mode
