@@ -366,6 +366,19 @@ In order to use sudo/tramp in eshell nicely, you must update the eshell modules 
     :config
     (add-to-list 'eshell-modules-list 'eshell-tramp))
 #+end_src
+** Ace-jump mode
+#+begin_src elisp
+  (use-package ace-jump-mode
+    :bind ("C-." . ace-jump-mode)
+    )
+#+end_src
+** Expand Region
+This is a handy script that lets you expand the selection region at the point by pressing =C-==
+#+begin_src elisp
+  (use-package expand-region
+    :bind ("C-=" . er/expand-region))
+    
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -533,7 +546,7 @@ also let's enable lsp-mode...
     :custom
     (tab-width 2)
     (compile-command "go build -v && go test -v && go vet"))
-
+  
   (use-package gotest
     :after go-mode
     :bind (:map go-mode-map
@@ -542,6 +555,9 @@ also let's enable lsp-mode...
                  ("C-c C-t a" . go-test-current-project))
                 )
     )
+  
+  (use-package gorepl-mode
+    :hook go-mode)
 #+end_src
 
 And to get language server support, install the LSP hook
