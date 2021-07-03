@@ -822,11 +822,19 @@ Unfortunatley this doens't work... I can't get it to detect the remote solargrap
 :END:
 Plain Text Accounting with https://www.ledger-cli.org
 #+begin_src elisp
-  (use-package hledger-mode)
-  (use-package flycheck-hledger
+  (use-package ledger-mode
+    :custom
+    (ledger-reports
+     '(("bal -V" "ledger ")
+       ("bal" "%(binary) -f %(ledger-file) bal")
+       ("reg" "%(binary) -f %(ledger-file) reg")
+       ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+       ("account" "%(binary) -f %(ledger-file) reg %(account)")))
+  
+    )
+  (use-package flycheck-ledger
     :after (flycheck ledger-mode)
-    :demand t
-    :hook (hledger-mode . flycheck-mode)
+    :hook (ledger-mode . flycheck-mode)
     )
 #+end_src
 * Documentation
