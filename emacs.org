@@ -50,6 +50,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 
     <<bootstrapping>>
 
+    <<window-manager>>
+
     <<user-interface>>
 
     <<programming-general>>
@@ -202,6 +204,82 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+begin_src elisp :noweb-ref exec-path-from-shell-config
      (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_ENTERPRISE__CONTRIBSYS__COM"))
    #+end_src
+
+* TODO Window Manager
+:PROPERTIES:
+:header-args: :noweb-ref window-manager
+:END:
+Emacs can be used as a window manager, thanks to =exwm=. Let's use it.
+#+begin_src elisp
+  (use-package exwm
+    :demand t)
+
+  (use-package exwm-config
+    :straight exwm
+    :demand t
+    :config
+      ;; Set the initial workspace number.
+    (unless (get 'exwm-workspace-number 'saved-value)
+      (setq exwm-workspace-number 4))
+    ;; Make class name the buffer name
+    (add-hook 'exwm-update-class-hook
+              (lambda ()
+                (exwm-workspace-rename-buffer exwm-class-name)))
+    ;; Global keybindings.
+    (unless (get 'exwm-input-global-keys 'saved-value)
+      (setq exwm-input-global-keys
+            `(
+              ;; 's-r': Reset (to line-mode).
+              ([?\s-r] . exwm-reset)
+              ;; 's-w': Switch workspace.
+              ([?\s-w] . exwm-workspace-switch)
+              ;; 's-&': Launch application.
+              ([?\s-&] . (lambda (command)
+                           (interactive (list (read-shell-command "$ ")))
+                           (start-process-shell-command command nil command)))
+              ;; 's-N': Switch to certain workspace.
+              ,@(mapcar (lambda (i)
+                          `(,(kbd (format "s-%d" i)) .
+                            (lambda ()
+                              (interactive)
+                              (exwm-workspace-switch-create ,i))))
+                        (number-sequence 0 9)))))
+    ;; Line-editing shortcuts
+    (unless (get 'exwm-input-simulation-keys 'saved-value)
+      (setq exwm-input-simulation-keys
+            '(([?\C-b] . [left])
+              ([?\C-f] . [right])
+              ([?\C-p] . [up])
+              ([?\C-n] . [down])
+              ([?\C-a] . [home])
+              ([?\C-e] . [end])
+              ([?\M-v] . [prior])
+              ([?\C-v] . [next])
+              ([?\C-d] . [delete])
+              ([?\C-k] . [S-end delete]))))
+    ;; Enable EXWM
+    (exwm-enable)
+    )
+
+  (use-package exwm-systemtray
+    :straight exwm
+    :demand t
+    :config (exwm-systemtray-enable))
+
+  (use-package desktop-environment
+    :after exwm
+    :config
+    (desktop-environment-mode))
+#+end_src
+
+Apparently we also need to add a desktop file entry so that SDDM recognizes it as a display manager.
+NOTE: This is not working, it inserts this source into my init file.
+#+begin_src conf :tangle "/sudo::/usr/share/xsessions/emacs.desktop" :noweb nil :noweb-ref nil
+  [Desktop Entry]
+  Name=Emacs
+  Exec=emacs
+  Type=Application
+#+end_src
 
 * General User Interface
   :PROPERTIES:
@@ -357,12 +435,37 @@ I've always liked solarized. For a while recently I was actually using the defau
     :config
     (load-theme 'solarized-light t))
 #+end_src
+
+** Mode Line
+Smart mode line for an improved mode line now that I'm trying to use =exwm=.
+#+begin_src elisp
+  (use-package smart-mode-line
+    :demand t
+    :config (sml/setup))
+#+end_src
+
+** TODO Display Battery and Time
+Well if exwm is my window manager then I wanna see the battery percentage and time of day in the mode line.
+#+begin_src elisp
+  (use-package battery
+    :straight nil
+    :demand t
+    :config (display-battery-mode 1))
+
+  (use-package time
+    :straight nil
+    :demand t
+    :config (display-time-mode 1))
+#+end_src
 ** Eshell
 In order to use sudo/tramp in eshell nicely, you must update the eshell modules list which doesn't include them by default.
 #+begin_src elisp
   (use-package esh-module
     :straight nil
     :demand t
+    :custom
+    (password-cache t)
+    (password-cache-expiry 300)
     :config
     (add-to-list 'eshell-modules-list 'eshell-tramp))
 #+end_src
@@ -379,6 +482,20 @@ This is a handy script that lets you expand the selection region at the point by
     :bind ("C-=" . er/expand-region))
     
 #+end_src
+** Unfill paragraph
+- ref :: https://www.emacswiki.org/emacs/UnfillParagraph
+
+  #+begin_src elisp
+    ;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph    
+    (defun unfill-paragraph (&optional region)
+      "Takes a multi-line paragraph and makes it into a single line of text."
+      (interactive (progn (barf-if-buffer-read-only) '(t)))
+      (let ((fill-column (point-max))
+            ;; This would override `fill-column' if it's an integer.
+            (emacs-lisp-docstring-fill-column t))
+        (fill-paragraph nil region)))
+    (global-set-key "\M-Q" 'unfill-paragraph)
+  #+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
