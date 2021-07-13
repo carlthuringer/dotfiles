@@ -332,6 +332,27 @@ NOTE: This is not working, it inserts this source into my init file.
        (set-face-font 'default "Fira Code-14"))
    #+end_src
 
+   To enable ligatures on the latest emacs, we have to use the
+   ligature.el package
+   #+begin_src elisp
+     (use-package ligature
+       :straight '(ligature :type git :host github :repo "mickeynp/ligature.el")
+       :demand t
+       :config
+       (ligature-set-ligatures 'prog-mode '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-" "::"
+                                            ":::" ":=" "!!" "!=" "!==" "-}" "----" "-->" "->" "->>"
+                                            "-<" "-<<" "-~" "#{" "#[" "##" "###" "####" "#(" "#?" "#_"
+                                            "#_(" ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*" "/**"
+                                            "/=" "/==" "/>" "//" "///" "&&" "||" "||=" "|=" "|>" "^=" "$>"
+                                            "++" "+++" "+>" "=:=" "==" "===" "==>" "=>" "=>>" "<="
+                                            "=<<" "=/=" ">-" ">=" ">=>" ">>" ">>-" ">>=" ">>>" "<*"
+                                            "<*>" "<|" "<|>" "<$" "<$>" "<!--" "<-" "<--" "<->" "<+"
+                                            "<+>" "<=" "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<"
+                                            "<~" "<~~" "</" "</>" "~@" "~-" "~>" "~~" "~~>" "%%"))
+     
+       (global-ligature-mode 't))
+   #+end_src
+
 ** Disable the Customize interface updating my emacs file
    I like to know how and why various things are being set in my emacs
    files and therefore avoid the =customize-*= stuff that
