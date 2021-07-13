@@ -212,7 +212,13 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 Emacs can be used as a window manager, thanks to =exwm=. Let's use it.
 #+begin_src elisp
   (use-package exwm
-    :demand t)
+    :demand t
+    :config
+    ;; Make buffer name more meaningful
+    (add-hook 'exwm-update-class-hook
+            (lambda ()
+            (exwm-workspace-rename-buffer exwm-class-name)))
+    )
 
   (use-package exwm-config
     :straight exwm
@@ -496,6 +502,11 @@ This is a handy script that lets you expand the selection region at the point by
         (fill-paragraph nil region)))
     (global-set-key "\M-Q" 'unfill-paragraph)
   #+end_src
+** Text Scaling
+You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands. Well, I tried that and it's too hard, so let's use default-text-scale by =purcell=. 
+#+begin_src elisp
+  (use-package default-text-scale :demand t :diminish t :config (default-text-scale-mode 1))
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
