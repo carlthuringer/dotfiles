@@ -280,7 +280,7 @@ Emacs can be used as a window manager, thanks to =exwm=. Let's use it.
 
 Apparently we also need to add a desktop file entry so that SDDM recognizes it as a display manager.
 NOTE: This is not working, it inserts this source into my init file.
-#+begin_src conf :tangle "/sudo::/usr/share/xsessions/emacs.desktop" :noweb nil :noweb-ref nil
+#+begin_src conf :tangle (if (eq system-type 'gnu/linux) "/sudo::/usr/share/xsessions/emacs.desktop" "/tmp/emacs.desktop") :noweb nil :noweb-ref nil
   [Desktop Entry]
   Name=Emacs
   Exec=emacs
