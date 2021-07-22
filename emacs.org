@@ -202,7 +202,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    There are some secrets that I configure in my =.zshrc= that I
    sometimes need in my eshell.
    #+begin_src elisp :noweb-ref exec-path-from-shell-config
-     (exec-path-from-shell-copy-envs '("NPM_TOKEN" "BUNDLE_GEM__FURY__IO" "BUNDLE_ENTERPRISE__CONTRIBSYS__COM"))
+     (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS"))
    #+end_src
 
 * TODO Window Manager
@@ -528,6 +528,20 @@ You know sometimes you want to adjust the default text scaling, for reasons. Let
 #+begin_src elisp
   (use-package default-text-scale :demand t :diminish t :config (default-text-scale-mode 1))
 #+end_src
+** Dired
+Using dired for file management is super great, but it's usually got too much detail. So let's hide details by default.
+#+begin_src elisp
+  (use-package dired
+    :straight nil
+    :preface
+    (defun my/dired-details-setup () "Show less information in dired buffers"
+           (dired-hide-details-mode 1))
+    :custom
+    (dired-hide-details-hide-symlink-targets nil)
+    :hook
+    (dired-mode . my/dired-details-setup)
+    )
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -727,6 +741,16 @@ This is a portable, useful way to use emacs as a REST http client.
   (use-package jq-mode
     :demand t)
 #+end_src
+** NixOS
+The [[https://nixos.org/manual/nix/stable/][nix package manager]] and NixOS is a method for installing and
+managing environments of software programs, building, and configuring
+them. It can be seen as an alternative to homebrew or other package
+management solutions. It uses a declarative language for describing
+environments or system configurations.
+
+#+begin_src elisp
+  (use-package nix-mode)
+#+end_src
 
 * Org Mode
   :PROPERTIES:
@@ -813,6 +837,7 @@ This is a portable, useful way to use emacs as a REST http client.
        'org-babel-load-languages
        '(
          (ditaa . t)
+         (shell . t)
          <<org-babel-load-languages>>
          ))
     #+end_src

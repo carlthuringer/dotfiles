@@ -1,62 +1,3 @@
-# Path to your oh-my-zsh configuration.
-ZSH=$HOME/.oh-my-zsh
-
-# Set name of the theme to load.
-# Look in ~/.oh-my-zsh/themes/
-# Optionally, if you set this to "random", it'll load a random theme each
-# time that oh-my-zsh is loaded.
-ZSH_THEME="robbyrussell"
-
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-# Set to this to use case-sensitive completion
-# CASE_SENSITIVE="true"
-
-# Comment this out to disable bi-weekly auto-update checks
-# DISABLE_AUTO_UPDATE="true"
-
-# Uncomment to change how many often would you like to wait before auto-updates occur? (in days)
-# export UPDATE_ZSH_DAYS=13
-
-# Uncomment following line if you want to disable colors in ls
-# DISABLE_LS_COLORS="true"
-
-# Uncomment following line if you want to disable autosetting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment following line if you want red dots to be displayed while waiting for completion
-# COMPLETION_WAITING_DOTS="true"
-
-# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
-# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git)
-
-source $ZSH/oh-my-zsh.sh
-source /opt/boxen/env.sh
-
-# Customize to your needs...
-export PATH=/opt/boxen/homebrew/share/npm/bin:node_modules/.bin:/opt/boxen/bin:/opt/boxen/homebrew/bin:/opt/boxen/homebrew/sbin:/usr/local/bin:$USER/bin:$PATH:/usr/bin:/bin:/usr/sbin:/sbin
-# NPM bins
-export PATH=/opt/boxen/nvm/v0.8.8/bin/jshint:$PATH
-# Groupon Git Utils
-export PATH=$HOME/Workspace/groupon-git-utils/bin:$PATH
-# RBEnv Shims
-eval "$(rbenv init -)"
-
-
-export LC_CTYPE=en_US.UTF-8
-
-#fix iterm2 term reporting not working
-export TERM=xterm-256color
-
-# I don't know what this is for
-export EDITOR='vim'
-
-PATH=$PATH:$HOME/bin # Add homebin for autossh
-
 function rmb {
   current_branch=$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
   if [ "$current_branch" != "master" ]; then
@@ -100,15 +41,30 @@ alias fixopenwith='/System/Library/Frameworks/CoreServices.framework/Frameworks/
 # Bundle Exec shortcut
 alias be='bundle exec $1'
 
-# Rake it all up
-alias rakeup='be rake db:drop db:create db:migrate db:test:prepare'
+# JWT decoding function
+function jwt() {
+  for part in 1 2; do
+    b64="$(cut -f$part -d. <<< "$1" | tr '_-' '/+')"
+    len=${#b64}
+    n=$((len % 4))
+    if [[ 2 -eq n ]]; then
+      b64="${b64}=="
+    elif [[ 3 -eq n ]]; then
+      b64="${b64}="
+    fi
+    d="$(openssl enc -base64 -d -A <<< "$b64")"
+    python -mjson.tool <<< "$d"
+    # don't decode further if this is an encrypted JWT (JWE)
+    if [[ 1 -eq part ]] && grep '"enc":' <<< "$d" >/dev/null ; then
+        exit 0
+    fi
+  done
+}
 
-# Set the CPATH for freeimage and ruby_inline problem
-export CPATH=/usr/local/include
-
-# Now load all the files in the /shellscripts directory
-for file in $HOME/shellscripts/*.sh
-do
-  echo $file
-  source $file
-done
+# Gifmaker
+function dogif() {
+  input=$1
+  output="${input%.*}.gif"
+  width=${2:-800}
+  ffmpeg -i "${input}" -filter_complex "[0:v] fps=12,scale=${width}:-1,split [a][b]; [a] palettegen [p]; [b][p] paletteuse" "${output}"
+}
