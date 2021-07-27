@@ -47,22 +47,24 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 
   #+begin_src elisp :tangle ~/.config/emacs/init.el :mkdirp yes :noweb yes :no-export yes
     <<initialization-performance>>
-
+    
     <<bootstrapping>>
-
+    
     <<window-manager>>
-
+    
     <<user-interface>>
-
+    
     <<programming-general>>
-
+    
     <<org-mode>>
-
+    
     <<docker>>
-
+    
     <<ledger>>
-
+    
     <<documentation>>
+    
+    <<database>>
   #+end_src
   
 * Initialization Performance Tuning
@@ -595,6 +597,13 @@ And trim whitespace
        :bind (("C-x g" . magit-status)))
    #+end_src
 
+*** Magit Forge
+In my quest to increase my productivity, what if I could do all the github PR work directly in magit? Let's find out.
+#+begin_src elisp
+  (use-package forge
+    :after magit)
+#+end_src
+
 ** Company the autocompleter
 Company-mode is an autocompletion framework used happily by many other modes. http://company-mode.github.io/ We can pretty much turn it on for all programming modes, so that's what we will do.
 #+begin_src elisp
@@ -658,10 +667,12 @@ to want to use yasnippet when company completes things...
       (ruby-mode . lsp)
     #+end_src
 
-    And customize it
+    And customize it.  Sometimes I want to use bundler, sometimes
+    not. It's probably better not to so that I do not inadvertantly
+    force projects to adopt solargraph into the gemfile...
     #+begin_src elisp :noweb-ref lsp-mode-custom
       (lsp-solargraph-autoformat t)
-      (lsp-solargraph-use-bundler t)
+      (lsp-solargraph-use-bundler nil)
     #+end_src
     And by the way, ruby-mode annoyingly inserts this magic comment. STOP
     #+begin_src elisp
@@ -881,20 +892,21 @@ project notes. That's [[https://www.orgroam.com/][org-roam]].
 #+begin_src elisp
   (use-package org-roam
     :diminish
-    :hook
-    (after-init . org-roam-mode)
+    :ensure t
+    :preface
+    (setq org-roam-v2-ack t)
     :custom
-    (org-roam-directory "~/org/roam/")
-    (org-roam-buffer-position 'bottom)
+    (org-roam-directory (file-truename "~/org/roam"))
     (org-roam-index-file "~/org/roam/index.org")
-    :bind (:map org-roam-mode-map
-                (("C-c n l" . org-roam)
-                 ("C-c n f" . org-roam-find-file)
-                 ("C-c n j" . org-roam-jump-to-index)
-                 ("C-c n b" . org-roam-switch-to-buffer)
-                 ("C-c n g" . org-roam-graph))
-                :map org-mode-map
-                (("C-c n i" . org-roam-insert))))
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n g" . org-roam-graph)
+           ("C-c n i" . org-roam-node-insert)
+           ("C-c n c" . org-roam-capture)
+           ;; Dailies
+           ("C-c n j" . org-roam-dailies-capture-today))
+    :config
+    (org-roam-setup))
 #+end_src
 ** Org Journal
 One thing I've noticed with using =org-roam-dailies= is that I create a bunch of daily journal entries but then never revisit them. In fact it's not very useful for just capturing how I'm feeling or browsing back through the days. I found myself starting to link to other roam documents from the journal, and even then didn't find it super useful to check the daily backlinks. Really I want my journal to be browseable, and so I think the best way to represent the journal is in a continuous text file.
@@ -1044,4 +1056,17 @@ Plain Text Accounting with https://www.ledger-cli.org
        :magic ("%PUML" . plantuml-mode)
        )
    #+end_src
+* Database
+:PROPERTIES:
+:header-args: :noweb-ref database
+:END:
+Emacs has built in modes for talking to databases through psql!
+** sql-postgres
+Add the port parameter to the list of things that it checks for
+#+begin_src elisp
+  (use-package sql
+    :straight nil
+    :config
+    (add-to-list 'sql-postgres-login-params 'port t))
+#+end_src
 
