@@ -740,10 +740,42 @@ And to get language server support, install the LSP hook
   (go-mode . lsp)
 #+end_src
 ** Terraform HCL
-Sometimes I have to work in Terraform files
+Often I have to work in Terraform files
 #+begin_src elisp
   (use-package terraform-mode)
 #+end_src
+
+Use LSP mode!
+TODO: Don't use it. It tries to read the remote state, which is a bad idea and doesn't work with my environment configuration.
+#+begin_src elisp :noweb-ref nil
+  (terraform-mode . lsp)
+#+end_src
+*** Installing the terraform-lsp server
+Prerequisite: a working golang env.
+#+begin_src sh :session *shell install-terraform-lsp* :results verbatim  :noweb-ref nil
+  mkdir -p ~/Code/github.com/juliosueiras
+  cd ~/Code/github.com/juliosueiras
+  git clone https://github.com/juliosueiras/terraform-lsp.git  
+  cd terraform-lsp
+  git remote add awilkins https://github.com/awilkins/terraform-lsp.git
+  git fetch --all
+  git checkout awilkins/fix/dont-crash-when-local-not-found
+  GO111MODULE=on go mod download
+  TZ=UTC
+  DATE=$(date "+%Y-%m-%dT%H:%M.%SZ")
+  go build -ldflags "-X main.GitCommit=$(git rev-list -1 HEAD) -X main.Version=$(git describe --tags) -X main.Date=${DATE}"
+  mkdir -p ~/.bin
+  cp ./terraform-lsp ~/.bin/
+#+end_src
+
+#+RESULTS:
+: 
+: sh-3.2$ fatal: destination path 'terraform-lsp' already exists and is not an empty directory.
+: sh-3.2$ error: remote awilkins already exists.
+: Fetching origin
+: Fetching awilkins
+: HEAD is now at 13229c1 Merge branch 'master' into fix/dont-crash-when-local-not-found
+
 ** Rest Client
 This is a portable, useful way to use emacs as a REST http client.
 #+begin_src elisp
@@ -1070,3 +1102,7 @@ Add the port parameter to the list of things that it checks for
     (add-to-list 'sql-postgres-login-params 'port t))
 #+end_src
 
+And also enable sql for org-babel
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (sql . t)
+#+end_src
