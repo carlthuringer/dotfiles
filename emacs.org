@@ -460,9 +460,9 @@ I've always liked solarized. For a while recently I was actually using the defau
     :demand t
     :requires custom
     :custom
-    (custom-safe-themes '(solarized-light solarized-dark))
+    (custom-safe-themes '(solarized-light solarized-dark solarized-gruvbox-dark))
     :config
-    (load-theme 'solarized-light t))
+    (load-theme 'solarized-gruvbox-dark t))
 #+end_src
 
 ** Mode Line
