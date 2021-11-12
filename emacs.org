@@ -203,7 +203,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    There are some secrets that I configure in my =.zshrc= that I
    sometimes need in my eshell.
    #+begin_src elisp :noweb-ref exec-path-from-shell-config
-     (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS"))
+     (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS" "FASTLY_API_KEY"))
    #+end_src
 
 * TODO Window Manager
