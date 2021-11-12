@@ -793,6 +793,11 @@ environments or system configurations.
 #+begin_src elisp
   (use-package nix-mode)
 #+end_src
+** Varnish Configuration Language
+VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs.
+#+begin_src elisp
+  (use-package vcl-mode)
+#+end_src
 
 * Org Mode
   :PROPERTIES:
