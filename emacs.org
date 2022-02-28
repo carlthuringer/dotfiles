@@ -47,24 +47,24 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 
   #+begin_src elisp :tangle ~/.config/emacs/init.el :mkdirp yes :noweb yes :no-export yes
     <<initialization-performance>>
-    
+
     <<bootstrapping>>
-    
-    <<window-manager>>
-    
+
     <<user-interface>>
-    
+
     <<programming-general>>
-    
+
     <<org-mode>>
-    
+
     <<docker>>
-    
+
     <<ledger>>
-    
+
     <<documentation>>
-    
+
     <<database>>
+
+    <<kubernetes>>
   #+end_src
   
 * Initialization Performance Tuning
@@ -205,88 +205,6 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+begin_src elisp :noweb-ref exec-path-from-shell-config
      (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS" "FASTLY_API_KEY"))
    #+end_src
-
-* TODO Window Manager
-:PROPERTIES:
-:header-args: :noweb-ref window-manager
-:END:
-Emacs can be used as a window manager, thanks to =exwm=. Let's use it.
-#+begin_src elisp
-  (use-package exwm
-    :demand t
-    :config
-    ;; Make buffer name more meaningful
-    (add-hook 'exwm-update-class-hook
-            (lambda ()
-            (exwm-workspace-rename-buffer exwm-class-name)))
-    )
-
-  (use-package exwm-config
-    :straight exwm
-    :demand t
-    :config
-      ;; Set the initial workspace number.
-    (unless (get 'exwm-workspace-number 'saved-value)
-      (setq exwm-workspace-number 4))
-    ;; Make class name the buffer name
-    (add-hook 'exwm-update-class-hook
-              (lambda ()
-                (exwm-workspace-rename-buffer exwm-class-name)))
-    ;; Global keybindings.
-    (unless (get 'exwm-input-global-keys 'saved-value)
-      (setq exwm-input-global-keys
-            `(
-              ;; 's-r': Reset (to line-mode).
-              ([?\s-r] . exwm-reset)
-              ;; 's-w': Switch workspace.
-              ([?\s-w] . exwm-workspace-switch)
-              ;; 's-&': Launch application.
-              ([?\s-&] . (lambda (command)
-                           (interactive (list (read-shell-command "$ ")))
-                           (start-process-shell-command command nil command)))
-              ;; 's-N': Switch to certain workspace.
-              ,@(mapcar (lambda (i)
-                          `(,(kbd (format "s-%d" i)) .
-                            (lambda ()
-                              (interactive)
-                              (exwm-workspace-switch-create ,i))))
-                        (number-sequence 0 9)))))
-    ;; Line-editing shortcuts
-    (unless (get 'exwm-input-simulation-keys 'saved-value)
-      (setq exwm-input-simulation-keys
-            '(([?\C-b] . [left])
-              ([?\C-f] . [right])
-              ([?\C-p] . [up])
-              ([?\C-n] . [down])
-              ([?\C-a] . [home])
-              ([?\C-e] . [end])
-              ([?\M-v] . [prior])
-              ([?\C-v] . [next])
-              ([?\C-d] . [delete])
-              ([?\C-k] . [S-end delete]))))
-    ;; Enable EXWM
-    (exwm-enable)
-    )
-
-  (use-package exwm-systemtray
-    :straight exwm
-    :demand t
-    :config (exwm-systemtray-enable))
-
-  (use-package desktop-environment
-    :after exwm
-    :config
-    (desktop-environment-mode))
-#+end_src
-
-Apparently we also need to add a desktop file entry so that SDDM recognizes it as a display manager.
-NOTE: This is not working, it inserts this source into my init file.
-#+begin_src conf :tangle (if (eq system-type 'gnu/linux) "/sudo::/usr/share/xsessions/emacs.desktop" "/tmp/emacs.desktop") :noweb nil :noweb-ref nil
-  [Desktop Entry]
-  Name=Emacs
-  Exec=emacs
-  Type=Application
-#+end_src
 
 * General User Interface
   :PROPERTIES:
@@ -566,7 +484,8 @@ And use line numbers
 And trim whitespace
 #+begin_src elisp
   (use-package ws-butler
-  :hook (prog-mode . ws-butler-mode))
+    :hook (prog-mode . ws-butler-mode)
+    (markdown-mode . ws-butler-mode))
 #+end_src
 
 ** Projectile
@@ -796,7 +715,7 @@ environments or system configurations.
 ** Varnish Configuration Language
 VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs.
 #+begin_src elisp
-  (use-package vcl-mode)
+  ;; (use-package vcl-mode)
 #+end_src
 
 * Org Mode
@@ -870,9 +789,9 @@ VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs
 					      ("begin" "$1" "$" "$$" "\\(" "\\[")))
     #+end_src
 
-    And for my org agenda, we'll keep those files in =~/org/agenda=, but we'll also capture todos from =~/org/journal=
+    And for my org agenda, we'll keep those files in =~/Documents/org/agenda=, but we'll also capture todos from =~/Documents/org/journal=
     #+begin_src elisp
-      (org-agenda-files '("~/org/agenda/" "~/org/journal/"))
+      (org-agenda-files '("~/Documents/org/agenda/" "~/Documents/org/journal/"))
     #+end_src
 *** Org-Babel
 :PROPERTIES:
@@ -932,8 +851,8 @@ project notes. That's [[https://www.orgroam.com/][org-roam]].
     :preface
     (setq org-roam-v2-ack t)
     :custom
-    (org-roam-directory (file-truename "~/org/roam"))
-    (org-roam-index-file "~/org/roam/index.org")
+    (org-roam-directory (file-truename "~/Documents/org/roam"))
+    (org-roam-index-file "~/Documents/org/roam/index.org")
     :bind (("C-c n l" . org-roam-buffer-toggle)
            ("C-c n f" . org-roam-node-find)
            ("C-c n g" . org-roam-graph)
@@ -956,7 +875,7 @@ I will configure org-journal to place my journals in =~/org/journal=, and use a 
     :commands (org-journal-new-entry)
     :bind ("C-c c" . org-journal-new-entry)
     :custom
-    (org-journal-dir "~/org/journal")
+    (org-journal-dir "~/Documents/org/journal")
     (org-journal-file-type 'yearly)
     (org-journal-file-format "%Y.org")
     (org-journal-date-format "%A, %Y-%m-%d")
@@ -1109,4 +1028,16 @@ Add the port parameter to the list of things that it checks for
 And also enable sql for org-babel
 #+begin_src elisp :noweb-ref org-babel-load-languages
   (sql . t)
+#+end_src
+* Kubernetes
+:PROPERTIES:
+:header-args: :noweb-ref kubernetes
+:END:
+It's a neat thing! Ok, let's try using this kubernetes porcelain
+#+begin_src elisp
+    (use-package kubernetes
+      :commands (kubernetes-overview)
+      :custom
+      kubernetes-poll-frequency 3600
+      kubernetes-redraw-frequency 3600)
 #+end_src
