@@ -485,7 +485,8 @@ And trim whitespace
 #+begin_src elisp
   (use-package ws-butler
     :hook (prog-mode . ws-butler-mode)
-    (markdown-mode . ws-butler-mode))
+    (markdown-mode . ws-butler-mode)
+    (yaml-mode . ws-butler-mode))
 #+end_src
 
 ** Projectile
@@ -698,9 +699,14 @@ Prerequisite: a working golang env.
 This is a portable, useful way to use emacs as a REST http client.
 #+begin_src elisp
   (use-package restclient)
+  (use-package ob-restclient :after org)
   (use-package cl-lib)
   (use-package jq-mode
     :demand t)
+#+end_src
+
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (restclient . t)
 #+end_src
 ** NixOS
 The [[https://nixos.org/manual/nix/stable/][nix package manager]] and NixOS is a method for installing and
