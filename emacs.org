@@ -330,7 +330,21 @@ Presently this seems to break the first or second time I invoke it.
 *** Selectrum autocompletion
 Well, I was just looking at Straight.el's author, =raxod502='s github org and wow so there's a selection framework that's been here for 3 years. Let's try it.
 #+begin_src elisp
-  (use-package selectrum :demand t :config (selectrum-mode +1))
+  (use-package selectrum
+    :demand t
+    :custom
+    (selectrum-refine-candidates-function #'orderless-filter)
+    (selectrum-highlight-candidates-function #'orderless-highlight-matches)
+    :config (selectrum-mode +1))
+#+end_src
+
+An alternative filtering system [[https://github.com/oantolin/orderless#selectrum][orderless]].
+#+begin_src elisp
+  (use-package orderless
+    :demand t
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
 #+end_src
 
 Make sorting more prescient
@@ -776,7 +790,6 @@ to want to use yasnippet when company completes things...
        )
 
      (use-package lsp-ui  :commands lsp-ui-mode)
-     (use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
    #+end_src
    
 ** YAML
@@ -837,6 +850,15 @@ Prettier formatting for javascript
 also let's enable lsp-mode...
 #+begin_src elisp :noweb-ref lsp-mode-hooks
   (js-mode . lsp)
+#+end_src
+** Typescript
+#+begin_src elisp
+  (use-package typescript-mode :mode "\\.tsx?\\'")
+#+end_src
+
+Enable lsp mode
+#+begin_src elisp :noweb-ref lsp-mode-hooks
+  (typescript-mode . lsp)
 #+end_src
 ** Vue.js
 #+begin_src elisp
