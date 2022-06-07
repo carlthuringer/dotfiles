@@ -685,6 +685,13 @@ Using dired for file management is super great, but it's usually got too much de
     (dired-mode . my/dired-details-setup)
     )
 #+end_src
+** Typing
+I got a new keyboard and it's pretty hard to type on. I need practice.
+#+begin_src elisp
+  (use-package speed-type)
+#+end_src
+
+To use this, use =M-x speed-type-buffer= or something similar to initiate a typing test in the current buffer.
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -844,7 +851,9 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
-    :hook (js-mode . prettier-mode))
+    :hook
+    (js-mode . prettier-mode)
+    (typescript-mode . prettier-mode))
 #+end_src
 
 also let's enable lsp-mode...
@@ -853,12 +862,24 @@ also let's enable lsp-mode...
 #+end_src
 ** Typescript
 #+begin_src elisp
-  (use-package typescript-mode :mode "\\.tsx?\\'")
+  (use-package typescript-mode
+    :mode "\\.ts?\\'"
+    :custom
+    (typescript-indent-level 2))
 #+end_src
 
 Enable lsp mode
 #+begin_src elisp :noweb-ref lsp-mode-hooks
   (typescript-mode . lsp)
+#+end_src
+
+And for tsx files, =web-mode=
+#+begin_src elisp
+  (use-package web-mode :mode "\\.tsx\\'")
+#+end_src
+
+#+begin_src elisp :noweb-ref lsp-mode-hooks
+  (web-mode . lsp)
 #+end_src
 ** Vue.js
 #+begin_src elisp
