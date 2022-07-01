@@ -313,7 +313,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 ** Completion Framework
 *** [DISABLED] Fido mode
 :PROPERTIES:
-:header-args: :tangle nil
+:header-args: :tangle no
 :END:
 Hold the phone. Emacs 27 includes a thing called fido mode. It's like Ido, but not horrible. The only issue is that it's hard to read.
 
@@ -533,7 +533,7 @@ to Helm or Counsel users) and in normal buffers.
 
 *** [DISABLED] Swiper/Ivy/Counsel autocompletion frameworks
 :PROPERTIES:
-:header-args: :tangle nil
+:header-args: :tangle no
 :END:
    I'm leaving Helm behind to try a simpler autocompletion framework.
    *Troubleshooting*: I had to move the =ivy-re-builders-alist= into the config block, because it seems as though some other part of startup was setting a default on first evaluation.
@@ -851,9 +851,8 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
-    :hook
-    (js-mode . prettier-mode)
-    (typescript-mode . prettier-mode))
+    :mode (("\\.js?\\'" . prettier-mode)
+           ("\\.ts?\\'" . prettier-mode)))
 #+end_src
 
 also let's enable lsp-mode...
@@ -986,6 +985,13 @@ environments or system configurations.
 VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs.
 #+begin_src elisp
   ;; (use-package vcl-mode)
+#+end_src
+** Groovy
+Man, sometimes you want to write java but without all the icky boilerplate. I encounter this when it is used with jenkins.
+#+begin_src elisp
+  (use-package groovy-mode
+    :mode "\\.Jenkinsfile\\'"
+    )
 #+end_src
 
 * Org Mode
