@@ -286,12 +286,13 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+begin_src elisp
      (use-package pulse
        :straight nil
+       :demand t
        :config
        (defun pulse-line (&rest _)
-	 "Pulse the current line."
-	 (pulse-momentary-highlight-one-line (point)))
+         "Pulse the current line."
+         (pulse-momentary-highlight-one-line (point)))
        (dolist (command '(scroll-up-command scroll-down-command recenter-top-bottom other-window))
-	 (advice-add command :after #'pulse-line)))
+         (advice-add command :after #'pulse-line)))
    #+end_src
 
 ** =diminish=
@@ -311,22 +312,6 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+end_src
   
 ** Completion Framework
-*** [DISABLED] Fido mode
-:PROPERTIES:
-:header-args: :tangle no
-:END:
-Hold the phone. Emacs 27 includes a thing called fido mode. It's like Ido, but not horrible. The only issue is that it's hard to read.
-
-Presently this seems to break the first or second time I invoke it.
-
-#+begin_src elisp
-  (use-package icomplete
-    :demand t
-    :straight nil
-    :config
-    (fido-mode +1)
-    (fido-vertical-mode +1))
-#+end_src
 *** Selectrum autocompletion
 Well, I was just looking at Straight.el's author, =raxod502='s github org and wow so there's a selection framework that's been here for 3 years. Let's try it.
 #+begin_src elisp
@@ -351,6 +336,8 @@ Make sorting more prescient
 #+begin_src elisp
   (use-package selectrum-prescient
     :after selectrum
+    :custom
+    (prescient-save-file "~/.config/emacs/prescient")
     :config
     (selectrum-prescient-mode +1)
     (prescient-persist-mode +1))
@@ -531,46 +518,6 @@ to Helm or Counsel users) and in normal buffers.
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
-*** [DISABLED] Swiper/Ivy/Counsel autocompletion frameworks
-:PROPERTIES:
-:header-args: :tangle no
-:END:
-   I'm leaving Helm behind to try a simpler autocompletion framework.
-   *Troubleshooting*: I had to move the =ivy-re-builders-alist= into the config block, because it seems as though some other part of startup was setting a default on first evaluation.
-   #+begin_src elisp
-     (use-package ivy
-       :demand t
-       :straight counsel
-       :diminish ivy-mode
-       :custom
-       (ivy-use-virtual-buffers t)
-       (ivy-count-format "(%d/%d) ")
-       :config
-       (ivy-mode 1)
-       (setq ivy-re-builders-alist
-        '((t . ivy--regex-plus)))
-       )
-   #+end_src
-
-   Counsel-mode configures a lot of global bindings nicely.
-   #+begin_src elisp
-     (use-package counsel
-       :diminish counsel-mode
-       :demand t
-       :config (counsel-mode 1))
-   #+end_src
-
-   And incremental search with swiper-isearch
-   #+begin_src elisp
-     (use-package swiper
-       :bind ("C-s" . swiper-isearch)
-       )
-   #+end_src
-   In order to edit the ivy buffer
-   #+begin_src elisp
-     (use-package wgrep)
-   #+end_src
-
 ** Disable Auto-save and tempfiles
    #+begin_src elisp
      (use-package files
@@ -601,9 +548,9 @@ I've always liked solarized. For a while recently I was actually using the defau
     :demand t
     :requires custom
     :custom
-    (custom-safe-themes '(solarized-light solarized-dark solarized-gruvbox-dark solarized-gruvbox-light))
+    (custom-safe-themes t)
     :config
-    (load-theme 'solarized-gruvbox-dark t))
+    (load-theme 'solarized-selenized-dark t))
 #+end_src
 
 ** Mode Line
@@ -639,12 +586,22 @@ In order to use sudo/tramp in eshell nicely, you must update the eshell modules 
     :config
     (add-to-list 'eshell-modules-list 'eshell-tramp))
 #+end_src
-** Ace-jump mode
-#+begin_src elisp
+** [disabled] Ace-jump mode
+#+begin_src elisp :tangle no
   (use-package ace-jump-mode
     :bind ("C-." . ace-jump-mode)
     )
 #+end_src
+** [[https://github.com/abo-abo/avy][Avy (jump to characters)]]
+Helps you navigate around a big screen of letters!
+#+begin_src elisp
+  (use-package avy
+    :demand t
+    :bind ("C-." . avy-goto-char-timer)
+    :custom
+    (avy-timeout-seconds 0.3))
+#+end_src
+
 ** Expand Region
 This is a handy script that lets you expand the selection region at the point by pressing =C-==
 #+begin_src elisp
@@ -851,8 +808,7 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
-    :mode (("\\.js?\\'" . prettier-mode)
-           ("\\.ts?\\'" . prettier-mode)))
+    :hook ((js-mode typescript-mode) . (prettier-mode)))
 #+end_src
 
 also let's enable lsp-mode...
@@ -862,7 +818,7 @@ also let's enable lsp-mode...
 ** Typescript
 #+begin_src elisp
   (use-package typescript-mode
-    :mode "\\.ts?\\'"
+    :mode "\\.tsx?\\'"
     :custom
     (typescript-indent-level 2))
 #+end_src
@@ -909,6 +865,15 @@ And to get language server support, install the LSP hook
 
 #+begin_src elisp :noweb-ref lsp-mode-hooks
   (go-mode . lsp)
+#+end_src
+
+And to be even cooler, add it to =org-babel= with =ob-go=
+#+begin_src elisp
+  (use-package ob-go)
+#+end_src
+
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (go . t)
 #+end_src
 ** Terraform HCL
 Often I have to work in Terraform files
@@ -1054,6 +1019,7 @@ Man, sometimes you want to write java but without all the icky boilerplate. I en
     #+begin_src elisp
       (org-hide-emphasis-markers t)
       (org-pretty-entities t)
+      (org-export-use-babel nil)
     #+end_src
 
     For a while I was doing math notes and embedding latex in my
