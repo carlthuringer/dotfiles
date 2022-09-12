@@ -741,6 +741,7 @@ to want to use yasnippet when company completes things...
    means to get awesome support for multiple languages in emacs.
    #+begin_src elisp :noweb yes :no-export yes
      (use-package lsp-mode
+       :ensure t
        :hook
        ((lsp-mode . lsp-enable-which-key-integration)
         <<lsp-mode-hooks>>
@@ -748,9 +749,8 @@ to want to use yasnippet when company completes things...
        :commands lsp
        :custom
        (lsp-keymap-prefix "C-c l")
+       (lsp-file-watch-threshold 5000)
        <<lsp-mode-custom>>
-       :config
-       <<lsp-mode-config>>
        )
 
      (use-package lsp-ui  :commands lsp-ui-mode)
@@ -883,44 +883,13 @@ Often I have to work in Terraform files
 
 Use LSP mode!
 #+begin_src elisp :noweb-ref lsp-mode-hooks
-  (terraform-mode . lsp)
-#+end_src
-*** Installing the terraform-lsp server
-Prerequisite: a working golang env.
-#+begin_src sh :session *shell install-terraform-lsp* :results verbatim  :noweb-ref nil
-  mkdir -p ~/Code/github.com/juliosueiras
-  cd ~/Code/github.com/juliosueiras
-  git clone https://github.com/juliosueiras/terraform-lsp.git  
-  cd terraform-lsp
-  git remote add awilkins https://github.com/awilkins/terraform-lsp.git
-  git fetch --all
-  git checkout awilkins/fix/dont-crash-when-local-not-found
-  GO111MODULE=on go mod download
-  TZ=UTC
-  DATE=$(date "+%Y-%m-%dT%H:%M.%SZ")
-  go build -ldflags "-X main.GitCommit=$(git rev-list -1 HEAD) -X main.Version=$(git describe --tags) -X main.Date=${DATE}"
-  mkdir -p ~/.bin
-  cp ./terraform-lsp ~/.bin/
+  (terraform-mode . lsp-deferred)
 #+end_src
 
-#+RESULTS:
-: 
-: sh-3.2$ fatal: destination path 'terraform-lsp' already exists and is not an empty directory.
-: sh-3.2$ error: remote awilkins already exists.
-: Fetching origin
-: Fetching awilkins
-: HEAD is now at 13229c1 Merge branch 'master' into fix/dont-crash-when-local-not-found
 *** Installing the terraform-ls server
 Prerequisite brew or linuxbrew
 #+begin_src sh :session *shell install-terraform-ls* :noweb-ref nil
   brew install hashicorp/tap/terraform-ls
-#+end_src
-
-#+begin_src elisp :noweb-ref lsp-mode-config
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection '("terraform-ls" "serve"))
-                    :major-modes '(terraform-mode)
-                    :server-id 'terraform-ls))
 #+end_src
 
 ** Rest Client
