@@ -335,6 +335,7 @@ An alternative filtering system [[https://github.com/oantolin/orderless#selectru
 Make sorting more prescient
 #+begin_src elisp
   (use-package selectrum-prescient
+    :demand t
     :after selectrum
     :custom
     (prescient-save-file "~/.config/emacs/prescient")
@@ -550,7 +551,7 @@ I've always liked solarized. For a while recently I was actually using the defau
     :custom
     (custom-safe-themes t)
     :config
-    (load-theme 'solarized-selenized-dark t))
+    (load-theme 'solarized-selenized-light t))
 #+end_src
 
 ** Mode Line
@@ -561,7 +562,7 @@ Smart mode line for an improved mode line now that I'm trying to use =exwm=.
     :config (sml/setup))
 #+end_src
 
-** TODO Display Battery and Time
+** Display Battery and Time
 Well if exwm is my window manager then I wanna see the battery percentage and time of day in the mode line.
 #+begin_src elisp
   (use-package battery
@@ -585,12 +586,6 @@ In order to use sudo/tramp in eshell nicely, you must update the eshell modules 
     (password-cache-expiry 300)
     :config
     (add-to-list 'eshell-modules-list 'eshell-tramp))
-#+end_src
-** [disabled] Ace-jump mode
-#+begin_src elisp :tangle no
-  (use-package ace-jump-mode
-    :bind ("C-." . ace-jump-mode)
-    )
 #+end_src
 ** [[https://github.com/abo-abo/avy][Avy (jump to characters)]]
 Helps you navigate around a big screen of letters!
@@ -649,6 +644,17 @@ I got a new keyboard and it's pretty hard to type on. I need practice.
 #+end_src
 
 To use this, use =M-x speed-type-buffer= or something similar to initiate a typing test in the current buffer.
+** Cleaning up open file watches
+Emacs on Macos hits the ulimit of 1024 a lot. Here we define a function from the future that allows us to remove watches from the =file-notify-descriptors= list.
+#+begin_src elisp
+  (defun file-notify-rm-all-watches ()
+    "Remove all existing file notification watches from Emacs."
+    (interactive)
+    (maphash
+     (lambda (key _value)
+       (file-notify-rm-watch key))
+     file-notify-descriptors))
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -683,7 +689,7 @@ And trim whitespace
      (use-package projectile
        :diminish
        :init (projectile-mode +1)
-       :bind-keymap (("C-c p" . projectile-command-map))
+       :bind-keymap ("C-c p" . projectile-command-map)
        :custom
        (projectile-enable-caching t))
    #+end_src
@@ -808,6 +814,7 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
+    :mode "\\.(ts|js)x?\\'"
     :hook ((js-mode typescript-mode) . (prettier-mode)))
 #+end_src
 
@@ -830,7 +837,12 @@ Enable lsp mode
 
 And for tsx files, =web-mode=
 #+begin_src elisp
-  (use-package web-mode :mode "\\.tsx\\'")
+  (use-package web-mode :mode "\\.((j|t)sx?|html)\\'"
+    :custom
+    (web-mode-markup-indent-offset 2)
+    (web-mode-css-indent-offset 2)
+    (web-mode-code-indent-offset 2)
+    )
 #+end_src
 
 #+begin_src elisp :noweb-ref lsp-mode-hooks
