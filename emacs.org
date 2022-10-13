@@ -655,6 +655,11 @@ Emacs on Macos hits the ulimit of 1024 a lot. Here we define a function from the
        (file-notify-rm-watch key))
      file-notify-descriptors))
 #+end_src
+** Disable Lockfiles
+I don't really do a multi-user thing and these lockfiles screw up =terraform-ls=.
+#+begin_src elisp
+  (setq create-lockfiles nil)
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
