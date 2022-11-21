@@ -491,7 +491,7 @@ to Helm or Counsel users) and in normal buffers.
     :ensure t
 
     :bind
-    (("C-." . embark-act)         ;; pick some comfortable binding
+    (("M-." . embark-act)         ;; pick some comfortable binding
      ("C-;" . embark-dwim)        ;; good alternative: M-.
      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
@@ -660,6 +660,70 @@ I don't really do a multi-user thing and these lockfiles screw up =terraform-ls=
 #+begin_src elisp
   (setq create-lockfiles nil)
 #+end_src
+** Org-Present
+Use org-present to give presentations straight from org mode
+#+begin_src elisp
+  (defun my/org-present-start ()
+
+    ;; Tweak font sizes
+    (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                       (header-line (:height 4.0) variable-pitch)
+                                       (org-document-title (:height 1.75) org-document-title)
+                                       (org-code (:height 1.55) org-code)
+                                       (org-verbatim (:height 1.55) org-verbatim)
+                                       (org-block (:height 1.25) org-block)
+                                       (org-block-begin-line (:height 0.7) org-block)))
+
+    ;;Create empty header space
+    (setq header-line-format " ")
+
+    ;; Center the presentation and wrap lines
+    (visual-fill-column-mode 1)
+    (visual-line-mode 1)
+
+    (load-theme 'solarized-selenized-dark)
+
+    (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+    )
+
+  (defun my/org-present-end ()
+    ;; reset fonts
+    (setq-local face-remapping-alist '(((default variable-pitch default))))
+
+    (setq header-line-format nil)
+
+    (visual-fill-column-mode 0)
+    (visual-line-mode 0)
+    (load-theme 'solarized-selenized-light)
+    )
+
+  (defun my/org-present-prepare-slide (buffer-name heading)
+    ;; Show only top-level headlines
+    (org-overview)
+    ;; Unfold the current entry
+    (org-show-entry)
+    ;; Show only direct subheadings of the slide but don't expand them
+    (org-show-children))
+
+  (use-package visual-fill-column
+    :custom
+    (visual-fill-column-width 110)
+    (visual-fill-column-center-text t))
+  (use-package org-present
+    :after visual-fill-column
+    :hook ((org-present-mode . my/org-present-start)
+           (org-present-mode-quit . my/org-present-end))
+    :init
+    (add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide))
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -671,13 +735,6 @@ Show Paren mode is always useful and built-in.
   (use-package paren
     :straight nil
     :hook (prog-mode . show-paren-mode))
-#+end_src
-
-And use line numbers
-#+begin_src elisp
-  (use-package linum
-    :straight nil
-    :hook (prog-mode . linum-mode))
 #+end_src
 
 And trim whitespace
@@ -819,8 +876,7 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
-    :mode "\\.(ts|js)x?\\'"
-    :hook ((js-mode typescript-mode) . (prettier-mode)))
+    :mode "\\.(ts|js)x?\\'")
 #+end_src
 
 also let's enable lsp-mode...
