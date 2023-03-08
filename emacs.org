@@ -806,6 +806,14 @@ to want to use yasnippet when company completes things...
     )
 #+end_src
 
+** YaFolding
+A folding mode for emacs, use =C-<return>= to fold. [[https://github.com/zenozeng/yafolding.el]]
+#+begin_src elisp
+  (use-package yafolding
+    :hook ((prog-mode)
+           (yaml-mode)))
+#+end_src
+
 ** LSP mode
    For better or worse it seems as though the LSP is the universal
    means to get awesome support for multiple languages in emacs.
