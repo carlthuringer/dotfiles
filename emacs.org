@@ -152,7 +152,9 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    bugging out. To fix it, let's first alias that back. Maybe soon it
    will be fixed: https://github.com/raxod502/straight.el/issues/757
 
-   #+begin_src elisp
+   I actually disabled this now, let's see if it still work
+
+   #+begin_src elisp :noweb-ref nil
      (setq native-comp-deferred-compilation-deny-list nil)
    #+end_src
 
@@ -213,7 +215,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
   Emacs' user interface is a bit dated looking and distracting, so I
   apply some small modifications to clean things up.
   
-** Disable =scroll-bar=mode=
+** Disable =scroll-bar-mode=
    This specifies whether to have any scroll bars.
    #+begin_src elisp
      (scroll-bar-mode 0)
@@ -302,7 +304,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+end_src
    
 ** which-key help me remember which key to press
-   #+begin_src elisp :tangle nil
+   #+begin_src elisp :noweb-ref nil
      (use-package which-key
        :diminish
        :demand t
@@ -453,18 +455,22 @@ Well this is a whole thingy. [[https://github.com/minad/consult][Consult]]
     ;; By default `consult-project-function' uses `project-root' from project.el.
     ;; Optionally configure a different project root function.
     ;;;; 1. project.el (the default)
-    ;; (setq consult-project-function #'consult--default-project--function)
+    (setq consult-project-function #'consult--default-project-function)
     ;;;; 2. vc.el (vc-root-dir)
     ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
     ;;;; 3. locate-dominating-file
     ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
     ;;;; 4. projectile.el (projectile-project-root)
-    (autoload 'projectile-project-root "projectile")
-    (setq consult-project-function (lambda (_) (projectile-project-root)))
+    ;; (autoload 'projectile-project-root "projectile")
+    ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
     ;;;; 5. No project support
     ;; (setq consult-project-function nil)
   )
 #+end_src
+
+#+RESULTS:
+: consult-history
+
 *** [[https://github.com/minad/marginalia][Marginalia]]
 #+begin_src elisp
   ;; Enable richer annotations using the Marginalia package
@@ -521,6 +527,9 @@ to Helm or Counsel users) and in normal buffers.
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
+#+RESULTS:
+| consult-preview-at-point-mode | embark-consult--upgrade-markers |
+
 ** Disable Auto-save and tempfiles
    #+begin_src elisp
      (use-package files
@@ -530,11 +539,11 @@ to Helm or Counsel users) and in normal buffers.
        (make-backup-files nil))
    #+end_src
 
-** Searching with the =ag= package
+** TODO Searching with the =ag= package
    The silver searcher is a great way to do full-text search across a
    code repository.
-   #+begin_src elisp
-     (use-package ag :demand t)
+   #+begin_src elisp :noweb-ref nil
+    (use-package ag :demand t)
    #+end_src
 
 ** Silencing noisy warnings
@@ -557,7 +566,7 @@ I've always liked solarized. For a while recently I was actually using the defau
 #+end_src
 
 ** Mode Line
-Smart mode line for an improved mode line now that I'm trying to use =exwm=.
+Smart mode line
 #+begin_src elisp
   (use-package smart-mode-line
     :demand t
@@ -565,7 +574,6 @@ Smart mode line for an improved mode line now that I'm trying to use =exwm=.
 #+end_src
 
 ** Display Battery and Time
-Well if exwm is my window manager then I wanna see the battery percentage and time of day in the mode line.
 #+begin_src elisp
   (use-package battery
     :straight nil
@@ -621,7 +629,7 @@ This is a handy script that lets you expand the selection region at the point by
     (global-set-key "\M-Q" 'unfill-paragraph)
   #+end_src
 ** Text Scaling
-You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands. Well, I tried that and it's too hard, so let's use default-text-scale by =purcell=. 
+You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands.
 #+begin_src elisp
   (use-package default-text-scale :demand t :diminish t :config (default-text-scale-mode 1))
 #+end_src
@@ -749,7 +757,7 @@ And trim whitespace
 
 ** Projectile
    An eminently useful way to navigate git-based project directories.
-   #+begin_src elisp
+   #+begin_src elisp :noweb-ref nil
      (use-package projectile
        :diminish
        :init (projectile-mode +1)
@@ -759,12 +767,19 @@ And trim whitespace
    #+end_src
 
    And let's get the counsel integration support in.
-   #+begin_src elisp
+   #+begin_src elisp :noweb-ref nil
      (use-package counsel-projectile
        :diminish
        :after projectile
        :init (counsel-projectile-mode 1))
    #+end_src
+
+*** Or project.el?
+Project is built into emacs! Why are we using projectile?
+#+begin_src elisp
+  (use-package project
+    :demand t)
+#+end_src
 
 ** Magit the magic git porcelain
    Really there are few things more awesome than the power of Magit in
