@@ -734,6 +734,23 @@ Use org-present to give presentations straight from org mode
     :init
     (add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide))
 #+end_src
+** [[https://emacs-tree-sitter.github.io/installation/][Tree Sitter Syntax Highlighting]]
+It's a faster, better way of highlighting instead of font-lock whatever nonsense regexps.
+
+In order to activate you must hook =tree-sitter-hl-mode= on any major modes for which you want it active
+#+begin_src elisp
+  (use-package tree-sitter
+    :hook ((go-mode
+            js-mode
+            nix-mode
+            terraform-mode
+            typescript-mode
+            web-mode
+            yaml-mode
+            ruby-mode) . tree-sitter-hl-mode))
+  (use-package tree-sitter-langs :after tree-sitter)
+#+end_src
+
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -832,7 +849,7 @@ A folding mode for emacs, use =C-<return>= to fold. [[https://github.com/zenozen
 ** LSP mode
    For better or worse it seems as though the LSP is the universal
    means to get awesome support for multiple languages in emacs.
-   #+begin_src elisp :noweb yes :no-export yes
+   #+begin_src elisp :noweb-ref nil :noweb yes :no-export yes
      (use-package lsp-mode
        :ensure t
        :hook
@@ -848,7 +865,26 @@ A folding mode for emacs, use =C-<return>= to fold. [[https://github.com/zenozen
 
      (use-package lsp-ui  :commands lsp-ui-mode)
    #+end_src
-   
+But wait, elglot is coming in emacs 29! And it's better! Let's try it (disables noweb)   
+
+** [[https://github.com/joaotavora/eglot][Eglot IDE features]]
+Eglot is like LSP except less of a mess. And it's native in Emacs 29, coming soon!
+#+begin_src elisp
+  (use-package eglot
+    :hook ((
+           dockerfile-mode
+           go-mode
+           js-mode
+           nix-mode
+           ruby-mode
+           terraform-mode
+           typescript-mode
+           yaml-mode
+           ) . eglot-ensure)
+    :config
+    (add-to-list 'eglot-server-programs
+                 '(terraform-mode . ("terraform-ls" "serve"))))
+#+end_src
 ** YAML
 #+begin_src elisp
   (use-package yaml-mode)
@@ -934,10 +970,6 @@ And for tsx files, =web-mode=
 #+begin_src elisp :noweb-ref lsp-mode-hooks
   (web-mode . lsp)
 #+end_src
-** Vue.js
-#+begin_src elisp
-  (use-package vue-mode)
-#+end_src
 ** Golang
 #+begin_src elisp
   (use-package go-mode
@@ -945,7 +977,7 @@ And for tsx files, =web-mode=
     :custom
     (tab-width 2)
     (compile-command "go build -v && go test -v && go vet"))
-  
+
   (use-package gotest
     :after go-mode
     :bind (:map go-mode-map
@@ -954,7 +986,7 @@ And for tsx files, =web-mode=
                  ("C-c C-t a" . go-test-current-project))
                 )
     )
-  
+
   (use-package gorepl-mode
     :hook go-mode)
 #+end_src
