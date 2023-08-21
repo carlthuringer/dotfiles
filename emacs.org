@@ -28,6 +28,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+begin_example
      :header-args: :noweb-ref reference-name
    #+end_example
+** What version of Emacs are we targeting?
+I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gain access to built-in tree-sitter and eglot.
 
 * Disable packages on startup
   First of all, let's disable loading all available packages at
@@ -304,7 +306,7 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
    #+end_src
    
 ** which-key help me remember which key to press
-   #+begin_src elisp :noweb-ref nil
+   #+begin_src elisp
      (use-package which-key
        :diminish
        :demand t
@@ -313,16 +315,44 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
        (which-key-mode))
    #+end_src
   
-** Completion Framework
-*** Selectrum autocompletion
-Well, I was just looking at Straight.el's author, =raxod502='s github org and wow so there's a selection framework that's been here for 3 years. Let's try it.
+** Enable recursive minibuffers
+Some fancy things like to show a minibuffer while you're in a minibuffer. Usually this is fine.
 #+begin_src elisp
-  (use-package selectrum
-    :demand t
-    :custom
-    (selectrum-refine-candidates-function #'orderless-filter)
-    (selectrum-highlight-candidates-function #'orderless-highlight-matches)
-    :config (selectrum-mode +1))
+  (use-package emacs
+    :straight nil
+    :init
+    ;; Enable recursive minibuffers
+    (setq enable-recursive-minibuffers t))
+#+end_src
+** Completion Framework
+*** Vertico autocompletion
+Apparently Selectrum has [[https://github.com/minad/vertico/wiki/Migrating-from-Selectrum-to-Vertico][been replaced by vertico]], so I can finally fix ripgrep searches.
+#+begin_src elisp
+  (use-package vertico
+    :init
+    (vertico-mode)
+
+    ;; Different scroll margin
+    ;; (setq vertico-scroll-margin 0)
+
+    ;; Show more candidates
+    ;; (setq vertico-count 20)
+
+    ;; Grow and shrink the Vertico minibuffer
+    ;; (setq vertico-resize t)
+
+    ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
+    ;; (setq vertico-cycle t)
+    )
+#+end_src
+
+Save history across Emacs restarts, which Vertico uses to sort entries.
+#+begin_src elisp
+  ;; Persist history over Emacs restarts. Vertico sorts by history position.
+  (use-package savehist
+    :straight nil
+    :init
+    (savehist-mode))
 #+end_src
 
 An alternative filtering system [[https://github.com/oantolin/orderless#selectrum][orderless]].
@@ -499,7 +529,7 @@ to Helm or Counsel users) and in normal buffers.
     :ensure t
 
     :bind
-    (("C-." . embark-act)         ;; pick some comfortable binding
+    (("C-<return>" . embark-act)         ;; pick some comfortable binding
      ("C-;" . embark-dwim)        ;; good alternative: M-.
      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
@@ -508,6 +538,10 @@ to Helm or Counsel users) and in normal buffers.
     ;; Optionally replace the key help with a completing-read interface
     (setq prefix-help-command #'embark-prefix-help-command)
 
+    ;; Show the Embark target at point via Eldoc.  You may adjust the Eldoc
+    ;; strategy, if you want to see the documentation from multiple providers.
+    (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+    ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
     :config
 
     ;; Hide the mode line of the Embark live/completions buffers
@@ -519,10 +553,6 @@ to Helm or Counsel users) and in normal buffers.
   ;; Consult users will also want the embark-consult package.
   (use-package embark-consult
     :ensure t
-    :after (embark consult)
-    :demand t ; only necessary if you have the hook below
-    ;; if you want to have consult previews as you move around an
-    ;; auto-updating embark collect buffer
     :hook
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
@@ -737,9 +767,12 @@ Use org-present to give presentations straight from org mode
 ** [[https://emacs-tree-sitter.github.io/installation/][Tree Sitter Syntax Highlighting]]
 It's a faster, better way of highlighting instead of font-lock whatever nonsense regexps.
 
+Tree sitter is built into emacs 29.
+
 In order to activate you must hook =tree-sitter-hl-mode= on any major modes for which you want it active
 #+begin_src elisp
   (use-package tree-sitter
+    :straight nil
     :hook ((go-mode
             js-mode
             nix-mode
@@ -749,6 +782,64 @@ In order to activate you must hook =tree-sitter-hl-mode= on any major modes for 
             yaml-mode
             ruby-mode) . tree-sitter-hl-mode))
   (use-package tree-sitter-langs :after tree-sitter)
+#+end_src
+
+In order to actually install language libraries when they are not shipped with major modes (often not) you can install [[https://github.com/emacs-tree-sitter/tree-sitter-langs][tree-sitter-langs]] which offers a function =tree-sitter-langs-install-grammars= for downloading the latest grammars. It does not, however install them properly, so we need to do a little extra work... Maybe someday in elisp.
+#+begin_src elisp
+  (use-package tree-sitter-langs :commands tree-sitter-langs-install-grammars)
+#+end_src
+
+With this installed, you must then follow the advice from [[https://www.masteringemacs.org/article/how-to-get-started-tree-sitter][MasteringEmacs: How to get started with tree sitter]]
+
+#+begin_quote
+The names of the files are <LANGUAGE>.so (or with your platform’s equivalent extension) which is not in keeping with the expected naming style in Emacs. You must first rename them so they’re named libtree-sitter-<LANGUAGE>.so. This is as good a time as any to learn how to bulk rename them with Emacs’s M-x dired and the editable dired buffers feature. 
+#+end_quote
+
+Editable dired is achieved by =C-x C-q=. The files must be moved to the emacs config directory, which is =~/.config/emacs/tree-sitter=
+
+Finally, there's a bit to actually supporting tree-sitter... that is, if a major mode doesn't already upgrade itself to the =major-ts-mode= then it won't just... work. You would have to update the =auto-mode-alist= entry for that mode, which comes from... somewhere? Actually it's a lot easier to just customize =major-mode-remap-alist=.
+
+First find all the modes with =C-h a= and =-ts-mode$= for the apropos search. That gives you a list of supported tree sitter modes given your current set of packages. Probably.
+
+Then update the following snippet to add mappings from the non-ts mode to the ts-mode which will occur transparently.
+
+#+begin_src elisp
+  (use-package files
+    :straight nil
+    :init
+    (setq major-mode-remap-alist
+          '(
+            (bash-mode . bash-ts-mode)
+            (c++-mode . c++-ts-mode)
+            (c-or-c++-mode . c-or-c++-ts-mode)
+            (cmake-mode . cmake-ts-mode)
+            (csharp-mode . csharp-ts-mode)
+            (css-mode . css-ts-mode)
+            (dockerfile-mode . dockerfile-ts-mode)
+            (go-mod-mode . go-mod-ts-mode)
+            (go-mode . go-ts-mode)
+            (java-mode . java-ts-mode)
+            (js-mode . js-ts-mode)
+            (js2-mode . js-ts-mode)
+            (json-mode . json-ts-mode)
+            (python-mode . python-ts-mode)
+            (ruby-mode . ruby-ts-mode)
+            (rust-mode . rust-ts-mode)
+            (toml-mode . toml-ts-mode)
+            (tsx-mode . tsx-ts-mode)
+            (typescript-mode . typescript-ts-mode)
+            (yaml-mode . yaml-ts-mode))))
+#+end_src
+** [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
+Yes, the evil AI is even in my emacs configuration.
+
+#+begin_src elisp
+  (use-package copilot
+    :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+    :bind (:map copilot-completion-map
+                (("<tab>" . 'copilot-accept-completion)
+                 ("TAB" . 'copilot-accept-completion))))
+
 #+end_src
 
 * Programming
@@ -761,15 +852,19 @@ Show Paren mode is always useful and built-in.
 #+begin_src elisp
   (use-package paren
     :straight nil
-    :hook (prog-mode . show-paren-mode))
+    :hook ((prog-mode terraform-mode) . show-paren-mode))
 #+end_src
 
 And trim whitespace
 #+begin_src elisp
   (use-package ws-butler
-    :hook (prog-mode . ws-butler-mode)
-    (markdown-mode . ws-butler-mode)
-    (yaml-mode . ws-butler-mode))
+    :hook
+    ((prog-mode
+     markdown-mode
+     yaml-mode
+     yaml-ts-mode
+     terraform-mode
+     ) . ws-butler-mode))
 #+end_src
 
 ** Projectile
@@ -813,12 +908,23 @@ In my quest to increase my productivity, what if I could do all the github PR wo
     :after magit)
 #+end_src
 
+We also need sqlite until *emacs 29*
+#+begin_src elisp
+  (use-package sqlite3)
+#+end_src
+
 ** Company the autocompleter
 Company-mode is an autocompletion framework used happily by many other modes. http://company-mode.github.io/ We can pretty much turn it on for all programming modes, so that's what we will do.
 #+begin_src elisp
   (use-package company
+    :demand t
     :diminish
-    :hook (prog-mode . company-mode))
+    :config
+    (global-company-mode +1))
+
+  (use-package company-box
+    :diminish
+    :hook (company-mode . company-box-mode))
 #+end_src
 
 ** Flycheck the better checker
@@ -834,56 +940,37 @@ I kept running into gross issues working with go-mode, since it seems
 to want to use yasnippet when company completes things...
 #+begin_src elisp
   (use-package yasnippet
-    :hook (prog-mode . yas-minor-mode)
+    :hook ((prog-mode terraform-mode) . yas-minor-mode)
     )
 #+end_src
 
-** YaFolding
-A folding mode for emacs, use =C-<return>= to fold. [[https://github.com/zenozeng/yafolding.el]]
-#+begin_src elisp
-  (use-package yafolding
-    :hook ((prog-mode)
-           (yaml-mode)))
-#+end_src
-
-** LSP mode
-   For better or worse it seems as though the LSP is the universal
-   means to get awesome support for multiple languages in emacs.
-   #+begin_src elisp :noweb-ref nil :noweb yes :no-export yes
-     (use-package lsp-mode
-       :ensure t
-       :hook
-       ((lsp-mode . lsp-enable-which-key-integration)
-        <<lsp-mode-hooks>>
-        )
-       :commands lsp
-       :custom
-       (lsp-keymap-prefix "C-c l")
-       (lsp-file-watch-threshold 5000)
-       <<lsp-mode-custom>>
-       )
-
-     (use-package lsp-ui  :commands lsp-ui-mode)
-   #+end_src
-But wait, elglot is coming in emacs 29! And it's better! Let's try it (disables noweb)   
-
 ** [[https://github.com/joaotavora/eglot][Eglot IDE features]]
-Eglot is like LSP except less of a mess. And it's native in Emacs 29, coming soon!
+Upgraded to emacs 29, eglot built-in now
 #+begin_src elisp
   (use-package eglot
-    :hook ((
-           dockerfile-mode
-           go-mode
-           js-mode
-           nix-mode
-           ruby-mode
-           terraform-mode
-           typescript-mode
-           yaml-mode
-           ) . eglot-ensure)
+    :ensure t
+    :commands (eglot eglot-ensure)
+    :hook
+    ((dockerfile-mode
+      go-mode
+      go-ts-mode
+      js-mode
+      nix-mode
+      ruby-mode
+      terraform-mode
+      typescript-ts-mode
+      yaml-mode) . eglot-ensure)
+    ((terraform-mode
+      typescript-ts-mode) . eglot-format-buffer-on-save)
+      
     :config
     (add-to-list 'eglot-server-programs
-                 '(terraform-mode . ("terraform-ls" "serve"))))
+                 '(terraform-mode . ("terraform-ls" "serve")))
+    :init
+    (defun eglot-format-buffer-on-save ()
+      (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+    (setq eglot-autoshutdown t))
+
 #+end_src
 ** YAML
 #+begin_src elisp
@@ -896,20 +983,7 @@ Eglot is like LSP except less of a mess. And it's native in Emacs 29, coming soo
 #+end_src
 ** Ruby
    All my favorite ruby programming configuration.
-*** Enable LSP
-    Let's turn on the language server for ruby.
-    #+begin_src elisp :noweb-ref lsp-mode-hooks
-      (ruby-mode . lsp)
-    #+end_src
-
-    And customize it.  Sometimes I want to use bundler, sometimes
-    not. It's probably better not to so that I do not inadvertantly
-    force projects to adopt solargraph into the gemfile...
-    #+begin_src elisp :noweb-ref lsp-mode-custom
-      (lsp-solargraph-autoformat t)
-      (lsp-solargraph-use-bundler nil)
-    #+end_src
-    And by the way, ruby-mode annoyingly inserts this magic comment. STOP
+   And by the way, ruby-mode annoyingly inserts this magic comment. STOP
     #+begin_src elisp
       (use-package ruby-mode
         :straight nil
@@ -937,24 +1011,20 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 Prettier formatting for javascript
 #+begin_src elisp
   (use-package prettier
-    :mode ("\\.\\(ts\\|js\\)x?\\'" . prettier-mode))
+    :hook ((typescript-mode
+            typescript-ts-mode
+            js-mode
+            js2-mode
+            tsx-ts-mode) . prettier-mode)
+  )
 #+end_src
 
-also let's enable lsp-mode...
-#+begin_src elisp :noweb-ref lsp-mode-hooks
-  (js-mode . lsp)
-#+end_src
 ** Typescript
 #+begin_src elisp
   (use-package typescript-mode
     :mode "\\.tsx?\\'"
     :custom
     (typescript-indent-level 2))
-#+end_src
-
-Enable lsp mode
-#+begin_src elisp :noweb-ref lsp-mode-hooks
-  (typescript-mode . lsp)
 #+end_src
 
 And for tsx files, =web-mode=
@@ -965,10 +1035,6 @@ And for tsx files, =web-mode=
     (web-mode-css-indent-offset 2)
     (web-mode-code-indent-offset 2)
     )
-#+end_src
-
-#+begin_src elisp :noweb-ref lsp-mode-hooks
-  (web-mode . lsp)
 #+end_src
 ** Golang
 #+begin_src elisp
@@ -991,12 +1057,6 @@ And for tsx files, =web-mode=
     :hook go-mode)
 #+end_src
 
-And to get language server support, install the LSP hook
-
-#+begin_src elisp :noweb-ref lsp-mode-hooks
-  (go-mode . lsp)
-#+end_src
-
 And to be even cooler, add it to =org-babel= with =ob-go=
 #+begin_src elisp
   (use-package ob-go)
@@ -1009,11 +1069,6 @@ And to be even cooler, add it to =org-babel= with =ob-go=
 Often I have to work in Terraform files
 #+begin_src elisp
   (use-package terraform-mode)
-#+end_src
-
-Use LSP mode!
-#+begin_src elisp :noweb-ref lsp-mode-hooks
-  (terraform-mode . lsp-deferred)
 #+end_src
 
 *** Installing the terraform-ls server
@@ -1057,7 +1112,17 @@ Man, sometimes you want to write java but without all the icky boilerplate. I en
     :mode "\\.Jenkinsfile\\'"
     )
 #+end_src
-
+** Python
+In order to better support python projects, it's helpful to have [[https://github.com/jorgenschaefer/pyvenv][pyvenv]]
+#+begin_src elisp
+  (use-package pyvenv :commands pyvenv-activate)
+#+end_src
+** [[https://github.com/json-emacs/json-mode][JSON mode]]
+Better than using js-mode which gets cranky fast.
+#+begin_src elisp
+  (use-package json-mode
+    :mode "\\.json\\'")
+#+end_src
 * Org Mode
   :PROPERTIES:
   :header-args: :noweb-ref org-mode
