@@ -577,12 +577,12 @@ to Helm or Counsel users) and in normal buffers.
 ** Theme
 Switching to the built-in modus themes
 #+begin_src elisp
-  (use-package custom
-    :straight nil
+  (use-package solarized-theme
+    :demand t
     :custom
     (custom-safe-themes t)
     :config
-    (load-theme 'modus-operandi t))
+    (load-theme 'solarized-selenized-light t))
 #+end_src
 
 ** Mode Line
@@ -1113,6 +1113,14 @@ Better than using js-mode which gets cranky fast.
   (use-package json-mode
     :mode "\\.json\\'")
 #+end_src
+** [[https://github.com/tminor/jsonnet-mode][JSONNET mode]]
+It's a programming language that emits JSON.
+#+begin_src elisp
+  (use-package jsonnet-mode
+    :mode "\\.\\(lib\\)?jsonnet\\'")
+#+end_src
+
+
 * Org Mode
   :PROPERTIES:
   :header-args: :noweb-ref org-mode
@@ -1325,11 +1333,6 @@ Lets us do something cool with org tables: Plot them in gnuplot
 And let's also enable org-babel plotting.
 #+begin_src elisp :noweb-ref org-babel-load-languages
   (gnuplot . t)
-#+end_src
-** Ascii art
-Artist mode is pretty neat, but for real whiz-bang:
-#+begin_src elisp
-  (use-package ascii-art-to-unicode)
 #+end_src
 * Docker
 :PROPERTIES:
