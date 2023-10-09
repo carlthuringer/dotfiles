@@ -223,6 +223,12 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
      (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS" "FASTLY_API_KEY"))
    #+end_src
 
+** Make sure that Homebrew info directory is loaded if present
+Homebrew keeps info files in =/opt/homebrew/share/info=. They won't show
+up in emacs' info browser unless they're added to the =Info-directory-list=
+#+begin_src elisp
+  (add-to-list 'Info-directory-list "/opt/homebrew/share/info")
+#+end_src
 * General User Interface
   :PROPERTIES:
   :header-args: :noweb-ref user-interface
@@ -1117,7 +1123,7 @@ Better than using js-mode which gets cranky fast.
 It's a programming language that emits JSON.
 #+begin_src elisp
   (use-package jsonnet-mode
-    :mode "\\.\\(lib\\)?jsonnet\\'")
+    :mode "\\.\\(lib|j\\)sonnet\\'")
 #+end_src
 
 
