@@ -955,13 +955,16 @@ Upgraded to emacs 29, eglot built-in now
       ruby-mode
       terraform-mode
       typescript-ts-mode
-      yaml-mode) . eglot-ensure)
+      yaml-mode
+      jsonnet-mode) . eglot-ensure)
     ((terraform-mode
       typescript-ts-mode) . eglot-format-buffer-on-save)
       
     :config
     (add-to-list 'eglot-server-programs
                  '(terraform-mode . ("terraform-ls" "serve")))
+    (add-to-list 'eglot-server-programs
+                 '(jsonnet-mode . ("jsonnet-language-server" "-t")))
     :init
     (defun eglot-format-buffer-on-save ()
       (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
