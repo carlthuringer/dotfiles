@@ -844,7 +844,13 @@ Sometimes I use =.dir-locals.el= to set local variable values for a given projec
     :straight nil
     :custom
     (safe-local-variable-values
-      '((jsonnet-library-search-directories . "lib"))))
+      '((eval setq jsonnet-library-search-directories
+         (list
+          (concat
+           (file-truename
+            (project-root
+             (project-current)))
+           "lib"))))))
 #+end_src
 * Programming
   :PROPERTIES:
