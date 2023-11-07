@@ -837,7 +837,15 @@ Yes, the evil AI is even in my emacs configuration.
                  ("TAB" . 'copilot-accept-completion))))
 
 #+end_src
-
+** Safe local variables
+Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
+#+begin_src elisp
+  (use-package files
+    :straight nil
+    :custom
+    (safe-local-variable-values
+      '((jsonnet-library-search-directories . "lib"))))
+#+end_src
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
@@ -965,6 +973,7 @@ Upgraded to emacs 29, eglot built-in now
                  '(terraform-mode . ("terraform-ls" "serve")))
     (add-to-list 'eglot-server-programs
                  '(jsonnet-mode . ("jsonnet-language-server" "-t")))
+    (add-hook 'eglot-managed-mode-hook (lambda () (remove-hook 'flymake-diagnostic-functions 'eglot-flymake-backend)))
     :init
     (defun eglot-format-buffer-on-save ()
       (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
