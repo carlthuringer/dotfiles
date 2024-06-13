@@ -86,10 +86,6 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 
     <<org-mode>>
 
-    <<docker>>
-
-    <<ledger>>
-
     <<documentation>>
 
     <<database>>
@@ -588,7 +584,7 @@ Switching to the built-in modus themes
     :custom
     (custom-safe-themes t)
     :config
-    (load-theme 'solarized-selenized-light t))
+    (load-theme 'solarized-selenized-dark t))
 #+end_src
 
 ** Mode Line
@@ -767,22 +763,19 @@ Tree sitter is built into emacs 29.
 
 In order to activate you must hook =tree-sitter-hl-mode= on any major modes for which you want it active
 #+begin_src elisp
-  (use-package tree-sitter
-    :straight nil
-    :hook ((go-mode
-            js-mode
-            nix-mode
-            terraform-mode
-            typescript-mode
-            web-mode
-            yaml-mode
-            ruby-mode) . tree-sitter-hl-mode))
+  (use-package tree-sitter)
   (use-package tree-sitter-langs :after tree-sitter)
 #+end_src
 
 In order to actually install language libraries when they are not shipped with major modes (often not) you can install [[https://github.com/emacs-tree-sitter/tree-sitter-langs][tree-sitter-langs]] which offers a function =tree-sitter-langs-install-grammars= for downloading the latest grammars. It does not, however install them properly, so we need to do a little extra work... Maybe someday in elisp.
 #+begin_src elisp
   (use-package tree-sitter-langs :commands tree-sitter-langs-install-grammars)
+#+end_src
+
+#+begin_src elisp
+  (use-package treesit-auto
+    :config
+    (global-treesit-auto-mode))
 #+end_src
 
 With this installed, you must then follow the advice from [[https://www.masteringemacs.org/article/how-to-get-started-tree-sitter][MasteringEmacs: How to get started with tree sitter]]
@@ -830,9 +823,9 @@ Then update the following snippet to add mappings from the non-ts mode to the ts
 Yes, the evil AI is even in my emacs configuration.
 DISABLED
 
-#+begin_src elisp :noweb-ref nil
+#+begin_src elisp
   (use-package copilot
-    :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+    :straight (:host github :repo "copilot-emacs/copilot.el" :files ("dist" "*.el"))
     :bind (:map copilot-completion-map
                 (("<tab>" . 'copilot-accept-completion)
                  ("TAB" . 'copilot-accept-completion))))
@@ -863,6 +856,11 @@ Sometimes I use =.dir-locals.el= to set local variable values for a given projec
            (car
             (dir-locals-find-file "./"))
            "lib"))))))
+#+end_src
+** [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]]
+Allows you to edit a grep buffer and apply the changes directly. I like to combine it with embark to edit a bunch of occurrances of a thing.
+#+begin_src elisp
+  (use-package wgrep :ensure t)
 #+end_src
 * Programming
   :PROPERTIES:
@@ -981,6 +979,7 @@ Upgraded to emacs 29, eglot built-in now
       ruby-mode
       terraform-mode
       typescript-ts-mode
+      tsx-ts-mode
       yaml-mode
       jsonnet-mode) . eglot-ensure)
     ((terraform-mode
@@ -1048,18 +1047,18 @@ Prettier formatting for javascript
 ** Typescript
 #+begin_src elisp
   (use-package typescript-mode
-    :mode "\\.tsx?\\'"
+    :mode "\\.ts?\\'"
     :custom
     (typescript-indent-level 2))
 #+end_src
 
-And for tsx files, =web-mode=
+And for tsx files, =tsx-ts-mode=
 #+begin_src elisp
-  (use-package web-mode :mode "\\.((j|t)sx?|html)\\'"
+  (use-package tsx-ts-mode
+    :straight (:type git :host github :repo "orzechowskid/tsx-mode.el")
+    :mode "\\.((j|t)sx?|html)\\'"
     :custom
-    (web-mode-markup-indent-offset 2)
-    (web-mode-css-indent-offset 2)
-    (web-mode-code-indent-offset 2)
+    (typescript-indent-level 2)
     )
 #+end_src
 ** Golang
@@ -1370,56 +1369,7 @@ And let's also enable org-babel plotting.
 #+begin_src elisp :noweb-ref org-babel-load-languages
   (gnuplot . t)
 #+end_src
-* Docker
-:PROPERTIES:
-:header-args: :noweb-ref docker
-:END:
-I often work inside docker containers, either on my personal devices
-or on work devices. When I'm doing such, I end up in a tricky
-situation where I cannot seamlessly operate the development
-environment in emacs because, for example, the database is only
-exposed in docker and I cannot run ruby tests without the database.
 
-** Tramp
-I tried using some docker-tramp elisp directly but it wasn't working,
-so I checked jwiegley's init and borrowed what he's doing there.
-#+begin_src elisp
-  (use-package docker-tramp
-    :custom
-    (docker-tramp-use-names t))
-  (use-package counsel-tramp :commands counsel-tramp)
-  (use-package tramp :straight nil
-    :config
-    ;; jww (2018-02-20): Without this change, tramp ends up sending hundreds of
-    ;; shell commands to the remote side to ask what the temporary directory is.
-    (put 'temporary-file-directory 'standard-value '("/tmp"))
-    (setq tramp-auto-save-directory "~/.cache/emacs/backups"
-          tramp-persistency-file-name "~/.emacs.d/data/tramp")
-    )
-
-#+end_src
-
-* Ledger
-:PROPERTIES:
-:header-args: :noweb-ref ledger
-:END:
-Plain Text Accounting with https://www.ledger-cli.org
-#+begin_src elisp
-  (use-package ledger-mode
-    :custom
-    (ledger-reports
-     '(("bal -V" "ledger ")
-       ("bal" "%(binary) -f %(ledger-file) bal")
-       ("reg" "%(binary) -f %(ledger-file) reg")
-       ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-       ("account" "%(binary) -f %(ledger-file) reg %(account)")))
-  
-    )
-  (use-package flycheck-ledger
-    :after (flycheck ledger-mode)
-    :hook (ledger-mode . flycheck-mode)
-    )
-#+end_src
 * Documentation
   :PROPERTIES:
   :header-args: :noweb-ref documentation
@@ -1434,6 +1384,16 @@ Plain Text Accounting with https://www.ledger-cli.org
        :magic ("%PUML" . plantuml-mode)
        )
    #+end_src
+** [[https://github.com/abrochard/mermaid-mode][Mermaid Mode]]
+[[https://mermaid-js.github.io][Mermaid]] is a nicer-looking text-to-diagram markup language.
+
+#+begin_src elisp
+  (use-package mermaid-mode)
+#+end_src
+
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (mermaid . t)
+#+end_src
 * Database
 :PROPERTIES:
 :header-args: :noweb-ref database
