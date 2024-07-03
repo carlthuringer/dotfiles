@@ -775,7 +775,10 @@ In order to actually install language libraries when they are not shipped with m
 
 #+begin_src elisp
   (use-package treesit-auto
+    :custom
+    (treesit-auto-install t)
     :config
+    (treesit-auto-add-to-auto-mode-alist 'all)
     (global-treesit-auto-mode))
 #+end_src
 
@@ -793,7 +796,7 @@ First find all the modes with =C-h a= and =-ts-mode$= for the apropos search. Th
 
 Then update the following snippet to add mappings from the non-ts mode to the ts-mode which will occur transparently.
 
-#+begin_src elisp
+#+begin_src elisp :noweb-ref nil
   (use-package files
     :straight nil
     :init
@@ -827,6 +830,7 @@ DISABLED
 #+begin_src elisp
   (use-package copilot
     :straight (:host github :repo "copilot-emacs/copilot.el" :files ("dist" "*.el"))
+    :hook (prog-mode . copilot-mode)
     :bind (:map copilot-completion-map
                 (("<tab>" . 'copilot-accept-completion)
                  ("TAB" . 'copilot-accept-completion))))
