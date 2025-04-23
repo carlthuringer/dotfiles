@@ -43,6 +43,8 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
   #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
     (setq package-enable-at-startup nil)
 
+    (server-start)
+
     ;; Some things from emacs bedrock!
     ;; https://git.sh.ht/~ashton314/emacs-bedrock
 
@@ -1107,9 +1109,12 @@ Prerequisite brew or linuxbrew
   brew install hashicorp/tap/terraform-ls
 #+end_src
 
-** Rest Client
+** [Disabled] Rest Client
 This is a portable, useful way to use emacs as a REST http client.
-#+begin_src elisp
+
+Disabled <2024-09-13 Fri> because it seems like Verb-mode is the successor.
+
+#+begin_src elisp :noweb-ref nil
   (use-package restclient)
   (use-package ob-restclient :after org)
   (use-package cl-lib)
@@ -1117,9 +1122,27 @@ This is a portable, useful way to use emacs as a REST http client.
     :demand t)
 #+end_src
 
-#+begin_src elisp :noweb-ref org-babel-load-languages
+#+begin_src elisp :noweb-ref nil
   (restclient . t)
 #+end_src
+
+
+** [[https://github.com/federicotdn/verb][Verb Mode]]
+An extension to org mode that supports sending http requests
+
+#+begin_src elisp
+  (use-package verb)
+#+end_src
+
+Let's also add the org config for it
+#+begin_src elisp :noweb-ref org-config
+  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+#+end_src
+
+#+begin_src elisp :noweb-ref org-babel-load-languages
+  (verb . t)
+#+end_src
+
 ** NixOS
 The [[https://nixos.org/manual/nix/stable/][nix package manager]] and NixOS is a method for installing and
 managing environments of software programs, building, and configuring
@@ -1386,19 +1409,9 @@ And let's also enable org-babel plotting.
 
    #+begin_src elisp
      (use-package plantuml-mode
-       :magic ("%PUML" . plantuml-mode)
+       :magic ("%PUML" . saplantuml-mode)
        )
    #+end_src
-** [[https://github.com/abrochard/mermaid-mode][Mermaid Mode]]
-[[https://mermaid-js.github.io][Mermaid]] is a nicer-looking text-to-diagram markup language.
-
-#+begin_src elisp
-  (use-package mermaid-mode)
-#+end_src
-
-#+begin_src elisp :noweb-ref org-babel-load-languages
-  (mermaid . t)
-#+end_src
 * Database
 :PROPERTIES:
 :header-args: :noweb-ref database
