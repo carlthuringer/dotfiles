@@ -200,34 +200,38 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 		 (setq use-package-always-defer t)
    #+end_src
 
-** Ensure that our exec path is configured
+** DISABLED Ensure that our exec path is configured
    Emacs looks in the =exec-path= for binaries when invoking a shell
    command. For better or worse we do still do much of our work with a
    real shell, and not within the confines of emacs, so as a shortcut
    we can configure the exec-path by using this helpful package, which
    spawns a shell process and dumps the path.
-   #+begin_src elisp :noweb yes :no-export yes
+   #+begin_src elisp :noweb-ref nil :no-export yes
      (use-package exec-path-from-shell
        :demand t
        :config
        (exec-path-from-shell-initialize)
-       <<exec-path-from-shell-config>>
+       :custom
+       (exec-path-from-shell-variables '("GITHUB_USER", "GITHUB_PACKAGE_PULL_TOKEN"))
        )
    #+end_src
    
-** Copy some environment variables, if they are present
-   There are some secrets that I configure in my =.zshrc= that I
-   sometimes need in my eshell.
-   #+begin_src elisp :noweb-ref exec-path-from-shell-config
-     (exec-path-from-shell-copy-envs '("NIX_PATH" "GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN" "CFLAGS" "FASTLY_API_KEY"))
-   #+end_src
-
 ** Make sure that Homebrew info directory is loaded if present
 Homebrew keeps info files in =/opt/homebrew/share/info=. They won't show
 up in emacs' info browser unless they're added to the =Info-directory-list=
 #+begin_src elisp
   (add-to-list 'Info-directory-list "/opt/homebrew/share/info")
 #+end_src
+
+** Add some homebrew bins on macos
+To properly compile the postgresql gem, we need =pg_config= to be on the path.
+#+begin_src elisp
+  ;; If the operating system is macos, add "/opt/homebrew/opt/libpq/bin" to exec-path
+  ;;
+  (when (string-equal system-type "darwin")
+    (add-to-list 'exec-path "/opt/homebrew/opt/libpq/bin"))
+#+end_src
+
 * General User Interface
   :PROPERTIES:
   :header-args: :noweb-ref user-interface
@@ -825,11 +829,11 @@ Then update the following snippet to add mappings from the non-ts mode to the ts
             (typescript-mode . typescript-ts-mode)
             (yaml-mode . yaml-ts-mode))))
 #+end_src
-** [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
+** TODO [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
 Yes, the evil AI is even in my emacs configuration.
-DISABLED
 
-#+begin_src elisp
+
+#+begin_src elisp :noweb-ref nil
   (use-package copilot
     :straight (:host github :repo "copilot-emacs/copilot.el" :files ("dist" "*.el"))
     :hook (prog-mode . copilot-mode)
@@ -838,10 +842,10 @@ DISABLED
                  ("TAB" . 'copilot-accept-completion))))
 
 #+end_src
-** [[https://github.com/s-kostyaev/ellama][Ellama]]
+** TODO [[https://github.com/s-kostyaev/ellama][Ellama]]
 Oh a non-evil ?? AI to put in emacs! Huzzah!
 
-#+begin_src elisp
+#+begin_src elisp :noweb-ref nil
   (use-package ellama
     :init
     (setopt ellama-language "English")
@@ -849,6 +853,39 @@ Oh a non-evil ?? AI to put in emacs! Huzzah!
     (setopt ellama-provider
   		  (make-llm-ollama
   		   :chat-model "zephyr" :embedding-model "zephyr")))
+#+end_src
+** [[https://github.com/karthink/gptel][GPTel]]
+A more intentional LLM usage interface for emacs, rather than autocomplete, all the time, everywhere. Easier to change backends such as using copilot or ollama depending on where this is deployed and what I have access to.
+
+#+begin_src elisp :noweb yes
+  (use-package gptel
+    :bind (:map gptel-mode-map ("C-x C-g" . gptel-menu))
+    :custom
+    (gptel-model 'devstral:latest)
+    (gptel-backend (gptel-get-backend "Ollama"))
+    :config
+    (gptel-make-gh-copilot "Copilot")
+    (gptel-make-ollama "Ollama"
+        :host "localhost:11434"
+        :stream t
+        :models '("gemma3:latest" "qwen3:latest" "deepseek-r1:latest" "devstral:latest"))
+    <<gptel-tools>>
+    )
+#+end_src
+*** Tools
+**** Terraform
+#+begin_src elisp :noweb-ref gptel-tools
+  (gptel-make-tool
+   :name "terraform_init"
+   :function (lambda (dir)
+               (message "Running: cd %s && terraform init -no-color" dir)
+               (let ((output (shell-command-to-string (format "cd %s && terraform init -no-color" dir))))
+                 output))  ; Always return the output string
+   :description "Run terraform init with the -no-color option in a specified directory and return the output"
+   :args (list '(:name "dir"
+                 :type string
+                 :description "The directory to run terraform init"))
+   :category "terraform")
 #+end_src
 ** Safe local variables
 Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
@@ -1182,8 +1219,13 @@ It's a programming language that emits JSON.
   (use-package jsonnet-mode
     :mode "\\.\\(lib|j\\)sonnet\\'")
 #+end_src
-
-
+** [[https://github.com/eki3z/mise.el][Mise.el]]
+Handles dev tools, runtimes and languages, installation thereof. Better than ASDF.
+#+begin_src elisp
+  (use-package mise
+    :demand t
+    :config (add-hook 'after-init-hook #'global-mise-mode))
+#+end_src
 * Org Mode
   :PROPERTIES:
   :header-args: :noweb-ref org-mode
