@@ -232,6 +232,16 @@ To properly compile the postgresql gem, we need =pg_config= to be on the path.
     (add-to-list 'exec-path "/opt/homebrew/opt/libpq/bin"))
 #+end_src
 
+** Use gsed on macos, if it's installed
+Man pages can't be read with the macos-bundled version of sed. Let's have it use gsed, or else display a warning.
+#+begin_src elisp
+  (when (string-equal system-type "darwin")
+    (if (executable-find "gsed")
+        (setq Man-sed-command "gsed")
+      (display-warning 'man-gsed "MacOS detected but `gsed` not found. Use `brew install gnu-sed` to install gsed.")))
+     
+#+end_src
+
 * General User Interface
   :PROPERTIES:
   :header-args: :noweb-ref user-interface
@@ -858,34 +868,313 @@ Oh a non-evil ?? AI to put in emacs! Huzzah!
 A more intentional LLM usage interface for emacs, rather than autocomplete, all the time, everywhere. Easier to change backends such as using copilot or ollama depending on where this is deployed and what I have access to.
 
 #+begin_src elisp :noweb yes
-  (use-package gptel
-    :bind (:map gptel-mode-map ("C-x C-g" . gptel-menu))
-    :custom
-    (gptel-model 'devstral:latest)
-    (gptel-backend (gptel-get-backend "Ollama"))
+  (use-package
+    gptel
+    :bind ("C-x C-g" . gptel-menu)
     :config
-    (gptel-make-gh-copilot "Copilot")
-    (gptel-make-ollama "Ollama"
-        :host "localhost:11434"
-        :stream t
-        :models '("gemma3:latest" "qwen3:latest" "deepseek-r1:latest" "devstral:latest"))
-    <<gptel-tools>>
-    )
+    ;; Delete the default backend
+    (setf
+     gptel--known-backends
+     (assoc-delete-all
+      "ChatGPT"
+      gptel--known-backends))
+    (setq gptel-backend
+          (gptel-make-ollama
+              "Ollama"
+            :host "localhost:11434"
+            :stream t
+            :models '("gemma3:latest"
+                      "qwen3:latest"
+                      "deepseek-r1:latest"
+                      "devstral:latest"))
+          gptel-model 'qwen3:latest)
+    (gptel-make-gh-copilot
+        "Copilot")
+    <<gptel-tools>>)
 #+end_src
 *** Tools
+:PROPERTIES:
+:header-args: :noweb-ref gptel-tools
+:END:
+
 **** Terraform
-#+begin_src elisp :noweb-ref gptel-tools
+#+begin_src elisp
+  (defun my/gptel-terraform-init (dir)
+    "Run `terraform init -no-color` in DIR and return the output."
+    (let ((output (with-temp-buffer
+                    (call-process "sh" nil t nil "-c" (format "cd %s && terraform init -no-color" dir))
+                    (buffer-string))))
+      output))
   (gptel-make-tool
    :name "terraform_init"
-   :function (lambda (dir)
-               (message "Running: cd %s && terraform init -no-color" dir)
-               (let ((output (shell-command-to-string (format "cd %s && terraform init -no-color" dir))))
-                 output))  ; Always return the output string
+   :function #'my/gptel-terraform-init
    :description "Run terraform init with the -no-color option in a specified directory and return the output"
    :args (list '(:name "dir"
-                 :type string
-                 :description "The directory to run terraform init"))
+                       :type string
+                       :description "The directory to run terraform init"))
    :category "terraform")
+#+end_src
+**** Emacs
+#+begin_src elisp
+  (defun my/gptel-read-documentation (symbol)
+    "Read the documentation for SYMBOL, which can be a function or variable."
+    (let ((sym (intern symbol)))
+      (cond
+       ((fboundp sym)
+        (documentation sym))
+       ((boundp sym)
+        (documentation-property sym 'variable-documentation))
+       (t
+        (format "No documentation found for %s" symbol)))))
+
+  (gptel-make-tool
+   :name "read_documentation"
+   :function #'my/gptel-read-documentation
+   :description "Read the documentation for a given function or variable."
+   :args (list
+          '(:name "name"
+                  :type string
+                  :description "The name of the function or variable for which to read documentation."))
+   :include t
+   :category "emacs")
+  (gptel-make-tool
+   :function (lambda (buffer)
+               (unless (buffer-live-p (get-buffer buffer))
+                 (error "Error: buffer %s is not live." buffer))
+               (with-current-buffer buffer
+                 (buffer-substring-no-properties (point-min) (point-max))))
+   :name "read_buffer"
+   :description "Return the contents of an Emacs buffer"
+   :args (list '(:name "buffer"
+                 :type string
+                 :description "The name of the buffer whose contents are to be retrieved"))
+   :category "emacs")
+#+end_src
+**** Eval
+#+begin_src elisp
+  (defun my/gptel-elisp-eval (code)
+    "Evaluate ELisp code with safety checks."
+    ;; Check for recursion
+    (when (string-match-p
+           "\\bmy/gptel-elisp-eval\\b"
+           code)
+      (error
+       "Unsafe code detected: recursion not allowed"))
+    ;; Block attempts to use advising mechanisms
+    (when (string-match-p
+           "\\b\\(defadvice\\|advice-add\\)\\b"
+           code)
+      (error
+       "Unsafe code detected: function advising not allowed"))
+    ;; Block function/macro definitions and similar constructs
+    (when (string-match-p
+           "\\b\\(defun\\|defmacro\\|defalias\\|defsubst\\|cl-defun\\|cl-defmacro\\|define-\\)\\b"
+           code)
+      (error
+       "Function and macro definitions are not allowed"))
+    ;; Evaluate the code
+    (condition-case err
+        (eval (read code) t)
+      (error
+       (format
+        "Evaluation error: %s"
+        (error-message-string err)))))
+
+  (gptel-make-tool
+   :name "elisp_eval"
+   :function #'my/gptel-elisp-eval
+   :description "Evaluate Emacs Lisp code and return the result. 
+  This can be used to execute Emacs Lisp expressions, but function and macro 
+  definitions are not permitted."
+   :args (list
+          '(:name "code"
+                  :type string
+                  :description "The Elisp code to evaluate"))
+   :confirm t
+   ;; Require confirmation for each invocation
+   :include t
+   ;; Include tool results in LLM output
+   :category "eval")
+
+#+end_src
+**** Filesystem
+#+begin_src elisp
+  (gptel-make-tool
+   :function (lambda (filepath)
+               (with-temp-buffer
+                 (insert-file-contents (expand-file-name filepath))
+                 (buffer-string)))
+   :name "read_file"
+   :description "Read and display the contents of a file"
+   :args (list '(:name "filepath"
+                 :type string
+                 :description "Path to the file to read. Supports relative paths and ~."))
+   :category "filesystem")
+  (gptel-make-tool
+   :function (lambda (directory)
+               (mapconcat #'identity
+                          (directory-files directory)
+                          "\n"))
+   :name "list_directory"
+   :description "List the contents of a given directory"
+   :args (list '(:name "directory"
+                 :type string
+                 :description "The path to the directory to list"))
+   :category "filesystem")
+#+end_src
+**** Documentation
+#+begin_src elisp
+   (defun my/gptel-read-info (node &optional topic)
+     "Read information from Info documentation.
+   NODE is the name of the Info manual (e.g., 'emacs', 'org', 'elisp').
+   TOPIC is an optional search topic within the manual."
+     (let ((info-buffer (generate-new-buffer " *gptel-info-temp*"))
+           (inhibit-message t)
+           (result nil)
+           (found nil))
+       (unwind-protect
+           (with-current-buffer info-buffer
+             (condition-case err
+                 (progn
+                   (Info-mode)
+                   (setq Info-standalone nil)
+                   
+                   ;; First verify that the manual exists
+                   (Info-find-node node "Top" t)
+                   
+                   ;; If topic is provided, try to find it
+                   (if (and topic (not (string-empty-p topic)))
+                       (progn
+                         ;; Method 1: Try direct navigation - good for section titles and menu items
+                         (condition-case nil
+                             (progn
+                               (Info-goto-node topic)
+                               (setq found t))
+                           (error nil))
+                         
+                         ;; Method 2: Try index lookup
+                         (unless found
+                           (condition-case nil
+                               (progn
+                                 (Info-index topic)
+                                 (setq found t))
+                             (error nil)))
+                         
+                         ;; Method 3: Search for menu items containing the topic
+                         (unless found
+                           (Info-find-node node "Top" t) ;; Go back to top
+                           (goto-char (point-min))
+                           (when (search-forward-regexp (concat "\\* .*" (regexp-quote topic) ".*::") nil t)
+                             (beginning-of-line)
+                             (let ((menu-item (buffer-substring-no-properties 
+                                               (+ (point) 2)
+                                               (- (search-forward "::") 2))))
+                               (Info-goto-node menu-item)
+                               (setq found t))))
+                         
+                         ;; Method 4: Try searching the content
+                         (unless found
+                           (Info-find-node node "Top" t) ;; Go back to top
+                           (condition-case nil
+                               (progn
+                                 (Info-search topic nil t)
+                                 (setq found t))
+                             (error nil)))
+                         
+                         ;; If we still haven't found it, provide a helpful message
+                         (unless found
+                           (setq result (format "Topic '%s' not found in the '%s' manual. Try a more specific or different search term." 
+                                               topic node))))
+                     
+                     ;; No topic provided, return the Top node
+                     (setq found t))
+                   
+                   ;; Extract content if we found something and don't already have a result
+                   (when (and found (not result))
+                     (let ((buffer-read-only nil))
+                       (goto-char (point-min))
+                       (when (re-search-forward "^File:.*$" nil t)
+                         (forward-line 1)
+                         (delete-region (point-min) (point))))
+                     
+                     (setq result (buffer-string))
+                     
+                     ;; Check if we got a directory/menu node without specific information
+                     (when (and topic 
+                                (or 
+                                 ;; Look for standard directory node patterns
+                                 (string-match-p "(.*?)Top" result)
+                                 ;; Look for menu indicators
+                                 (and (string-match-p "\\* Menu:" result)
+                                      ;; Has many menu entries
+                                      (> (count-matches "\\* [^:]+::" (point-min) (point-max)) 5))
+                                 ;; Look for intro text patterns common in directory/menu nodes
+                                 (or (string-match-p "This \\(is\\|the\\).*? \\(node\\|manual\\|info\\)" result)
+                                     (string-match-p "^\s+This (the Directory node) gives a menu of major topics" result))))
+                       (setq result (format "Found general menu information rather than specific details for '%s'. You may want to try a more specific search term." topic)))))
+               
+               (error (setq result (format "Error accessing Info manual '%s': %s" 
+                                           node 
+                                           (error-message-string err))))))
+         
+         ;; Cleanup - always runs
+         (when (buffer-live-p info-buffer)
+           (kill-buffer info-buffer)))
+       
+       ;; Return the result
+       (or result (format "No information found for '%s' in the '%s' manual." topic node))))
+   (gptel-make-tool
+    :name "read_info"
+    :function #'my/gptel-read-documentation
+    :description "Read Info for GNU software, which is documented using texinfo. While most GNU software also provides man pages, the Info documents tend to be more comprehensive."
+    :args (list '(:name "node"
+                  :type string
+                  :description "The name of the Info manual node (e.g., 'emacs', 'org', 'elisp', 'bash')")
+                '(:name "topic"
+                  :type string
+                  :description "Optional topic to search for within the manual"
+                  :optional t))
+    :category "documentation"
+    :include t)
+  (defun my/gptel-read-man (page &optional section)
+    "Read a man page and return its content.
+  PAGE is the name of the man page to read.
+  Optional SECTION specifies the manual section."
+    (condition-case err
+        (let* ((cmd (if section
+                       (format "man %s %s" section page)
+                     (format "man %s" page)))
+               (raw-result (shell-command-to-string cmd)))
+          ;; Check if the result seems like a valid man page
+          (if (or (string-match-p "No manual entry for" raw-result)
+                  (string-equal "" (string-trim raw-result)))
+              (format "Sorry, I couldn't find the man page for '%s%s'. It might not be installed on this system or might have a different name."
+                     (if section (concat section " ") "")
+                     page)
+            ;; Clean up the output:
+            ;; 1. Replace backspace+character sequences used for bold formatting
+            (let ((result raw-result))
+              ;; Remove backspace-character sequences used for formatting
+              (setq result (replace-regexp-in-string ".\b" "" result))
+              ;; Remove ANSI escape sequences
+              (setq result (replace-regexp-in-string "\e\\[[0-9;]*[mK]" "" result))
+              result)))
+      (error
+       (format "Error retrieving man page: %s" (error-message-string err)))))
+  (gptel-make-tool
+   :name "read_man_page"
+   :function #'my/gptel-read-man
+   :description "Read Unix/Linux manual pages (man pages) to get information about commands, APIs, file formats, and other system-related topics."
+   :args (list
+          '(:name "page"
+                  :type string
+                  :description "The name of the command or topic to look up in the man pages (e.g., 'ls', 'grep', 'printf')")
+          '(:name "section"
+                  :type string
+                  :description "Optional manual section number (e.g., '1' for commands, '2' for system calls, '3' for library functions)"
+                  :optional t))
+   :category "documentation"
+   :include t)
 #+end_src
 ** Safe local variables
 Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
@@ -1225,6 +1514,12 @@ Handles dev tools, runtimes and languages, installation thereof. Better than ASD
   (use-package mise
     :demand t
     :config (add-hook 'after-init-hook #'global-mise-mode))
+#+end_src
+** Emacs Lisp
+I want to use lispy-mode when entering an elisp buffer.
+#+begin_src elisp
+  (use-package lispy
+    :hook (emacs-lisp-mode . lispy-mode))
 #+end_src
 * Org Mode
   :PROPERTIES:
