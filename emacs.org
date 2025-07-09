@@ -176,12 +176,15 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
      (defvar bootstrap-version)
      (setq straight-repository-branch "develop")
      (let ((bootstrap-file
-            (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-           (bootstrap-version 5))
+            (expand-file-name
+             "straight/repos/straight.el/bootstrap.el"
+             (or (bound-and-true-p straight-base-dir)
+                 user-emacs-directory)))
+           (bootstrap-version 7))
        (unless (file-exists-p bootstrap-file)
          (with-current-buffer
              (url-retrieve-synchronously
-              "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+              "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
               'silent 'inhibit-cookies)
            (goto-char (point-max))
            (eval-print-last-sexp)))
@@ -839,14 +842,36 @@ Then update the following snippet to add mappings from the non-ts mode to the ts
             (typescript-mode . typescript-ts-mode)
             (yaml-mode . yaml-ts-mode))))
 #+end_src
-** TODO [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
+** Safe local variables
+Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
+#+begin_src elisp
+  (use-package files
+    :straight nil
+    :custom
+    (safe-local-variable-values
+      '((eval setq jsonnet-library-search-directories
+         (list
+          (concat
+           (car
+            (dir-locals-find-file "./"))
+           "lib"))))))
+#+end_src
+** [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]]
+Allows you to edit a grep buffer and apply the changes directly. I like to combine it with embark to edit a bunch of occurrances of a thing.
+#+begin_src elisp
+  (use-package wgrep :ensure t)
+#+end_src
+
+
+* Large Language Model Agents
+
+** [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
 Yes, the evil AI is even in my emacs configuration.
 
 
-#+begin_src elisp :noweb-ref nil
+#+begin_src elisp
   (use-package copilot
-    :straight (:host github :repo "copilot-emacs/copilot.el" :files ("dist" "*.el"))
-    :hook (prog-mode . copilot-mode)
+    :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
     :bind (:map copilot-completion-map
                 (("<tab>" . 'copilot-accept-completion)
                  ("TAB" . 'copilot-accept-completion))))
@@ -1176,24 +1201,17 @@ A more intentional LLM usage interface for emacs, rather than autocomplete, all 
    :category "documentation"
    :include t)
 #+end_src
-** Safe local variables
-Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
+** [[https://github.com/lizqwerscott/mcp.el][MCP.el]]
+A way of interfacing with Model Context Protocol servers with emacs as the client.
+
 #+begin_src elisp
-  (use-package files
-    :straight nil
-    :custom
-    (safe-local-variable-values
-      '((eval setq jsonnet-library-search-directories
-         (list
-          (concat
-           (car
-            (dir-locals-find-file "./"))
-           "lib"))))))
-#+end_src
-** [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]]
-Allows you to edit a grep buffer and apply the changes directly. I like to combine it with embark to edit a bunch of occurrances of a thing.
-#+begin_src elisp
-  (use-package wgrep :ensure t)
+  (use-package mcp
+    :ensure t
+    :after gptel
+    :custom (mcp-hub-servers
+             `("fetch" . (:command "docker" :args ("run" "-i" "--rm" "mcp/fetch"))))
+    :config (require 'mcp-hub)
+    :hook (after-init . mcp-hub-start-all-server))
 #+end_src
 * Programming
   :PROPERTIES:
@@ -1210,9 +1228,15 @@ Show Paren mode is always useful and built-in.
 
 And trim whitespace
 #+begin_src elisp
+  (straight-use-package
+   '(ws-butler :type git
+  	     :repo "https://github.com/emacsmirror/nongnu_elpa"
+  	     :branch "elpa/ws-butler"
+  	     :depth (full single-branch)
+  	     :local-repo "ws-butler"))
   (use-package ws-butler
-    :hook
-    ((prog-mode
+   :hook
+   ((prog-mode
      markdown-mode
      yaml-mode
      yaml-ts-mode
