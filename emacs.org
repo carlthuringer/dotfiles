@@ -94,6 +94,8 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
     <<database>>
 
     <<kubernetes>>
+
+    <<large-language-models>>
   #+end_src
   
 * Initialization Performance Tuning
@@ -862,8 +864,11 @@ Allows you to edit a grep buffer and apply the changes directly. I like to combi
   (use-package wgrep :ensure t)
 #+end_src
 
-
 * Large Language Model Agents
+:PROPERTIES:
+:header-args: :noweb-ref large-language-models
+:END:
+
 
 ** [[https://github.com/zerolfx/copilot.el#installation][Github Copilot]]
 Yes, the evil AI is even in my emacs configuration.
@@ -892,9 +897,9 @@ Oh a non-evil ?? AI to put in emacs! Huzzah!
 ** [[https://github.com/karthink/gptel][GPTel]]
 A more intentional LLM usage interface for emacs, rather than autocomplete, all the time, everywhere. Easier to change backends such as using copilot or ollama depending on where this is deployed and what I have access to.
 
-#+begin_src elisp :noweb yes
-  (use-package
-    gptel
+#+begin_src elisp :noweb yes :no-export yes
+  (use-package gptel
+    :ensure t
     :bind ("C-x C-g" . gptel-menu)
     :config
     ;; Delete the default backend
@@ -913,6 +918,7 @@ A more intentional LLM usage interface for emacs, rather than autocomplete, all 
                       "deepseek-r1:latest"
                       "devstral:latest"))
           gptel-model 'qwen3:latest)
+    (require 'gptel-integrations)
     (gptel-make-gh-copilot
         "Copilot")
     <<gptel-tools>>)
@@ -1209,7 +1215,7 @@ A way of interfacing with Model Context Protocol servers with emacs as the clien
     :ensure t
     :after gptel
     :custom (mcp-hub-servers
-             `("fetch" . (:command "docker" :args ("run" "-i" "--rm" "mcp/fetch"))))
+             `(("fetch" . (:command "docker" :args ("run" "-i" "--rm" "mcp/fetch")))))
     :config (require 'mcp-hub)
     :hook (after-init . mcp-hub-start-all-server))
 #+end_src
@@ -1537,7 +1543,7 @@ Handles dev tools, runtimes and languages, installation thereof. Better than ASD
 #+begin_src elisp
   (use-package mise
     :demand t
-    :config (add-hook 'after-init-hook #'global-mise-mode))
+    :hook (prog-mode . mise-mode))
 #+end_src
 ** Emacs Lisp
 I want to use lispy-mode when entering an elisp buffer.
