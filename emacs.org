@@ -517,6 +517,9 @@ Well this is a whole thingy. [[https://github.com/minad/consult][Consult]]
     ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
     ;;;; 5. No project support
     ;; (setq consult-project-function nil)
+
+    ;; Configure consult-ripgrep-args to allow ripgrep to search hidden files/folders
+    (setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --with-filename --line-number --search-zip")
   )
 #+end_src
 
@@ -1384,10 +1387,6 @@ Company-mode is an autocompletion framework used happily by many other modes. ht
     :diminish
     :config
     (global-company-mode +1))
-
-  (use-package company-box
-    :diminish
-    :hook (company-mode . company-box-mode))
 #+end_src
 
 ** Flycheck the better checker
