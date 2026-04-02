@@ -1,0 +1,226 @@
+#+TITLE: GPTel Tools
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.config/emacs/gptel-tools.el
+
+* GPTel Tools
+
+Literate configuration for Claude's Emacs-native tools. Tangles to
+=~/.config/emacs/gptel-tools.el=.
+
+* Helpers
+
+#+begin_src emacs-lisp
+(defun gptel-tools--capture-describe (fn)
+  "Call FN (a thunk) suppressing help window popups, return *Help* buffer string."
+  (let ((display-buffer-overriding-action
+         '(display-buffer-no-window . ((allow-no-window . t)))))
+    (funcall fn))
+  (with-current-buffer (help-buffer)
+    (buffer-string)))
+
+(defun gptel-tools--vc-safe-p (file)
+  "Return non-nil if FILE is version-controlled."
+  (vc-registered file))
+#+end_src
+
+* Tools
+
+** Dangerous
+
+Tools that mutate Emacs state or evaluate arbitrary code. Enable deliberately.
+
+*** eval_elisp
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "eval_elisp"
+ :category "dangerous"
+ :function (lambda (expression)
+             (let ((result nil)
+                   (output nil))
+               (setq output
+                     (with-output-to-string
+                       (setq result (eval (read expression) t))))
+               (format "Result: %S\n%s" result output)))
+ :description "Evaluate a single Elisp expression in the live Emacs environment. Use this to verify behavior, inspect state, or test snippets before writing them into tools or configuration. Only one sexp is read and evaluated per call. Captures output from `princ`, `prin1`, `print`. Does NOT capture `message' output (that goes to *Messages*). Returns the result formatted with %S, plus any captured stdout."
+ :args (list '(:name "expression"
+               :type string
+               :description "A single elisp sexp to evaluate."))
+ :include nil
+ :confirm t)
+#+end_src
+
+** Filesystem
+
+Tools for reading and writing files. Write operations require VC tracking.
+
+*** read_file
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "read_file"
+ :category "filesystem"
+ :function (lambda (path)
+             (unless (file-exists-p path)
+               (error "File does not exist: %s" path))
+             (with-temp-buffer
+               (insert-file-contents path)
+               (buffer-string)))
+ :description "Read and return the contents of a file at PATH. Use this to inspect source files, configuration, notes, or any text file on disk."
+ :args (list '(:name "path"
+               :type string
+               :description "Absolute path to the file to read."))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** write_file
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "write_file"
+ :category "filesystem"
+ :function (lambda (path content)
+             (unless (gptel-tools--vc-safe-p path)
+               (error "Refusing to write: %s is not version-controlled" path))
+             (with-temp-buffer
+               (insert content)
+               (write-region (point-min) (point-max) path nil 'silent))
+             (format "Wrote %s" path))
+ :description "Write CONTENT to FILE, overwriting it. Only works on VC-tracked files."
+ :args (list '(:name "path"
+               :type string
+               :description "Absolute path to the file")
+             '(:name "content"
+               :type string
+               :description "New file contents"))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** edit_file
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "edit_file"
+ :category "filesystem"
+ :function (lambda (path old-text new-text)
+             (unless (gptel-tools--vc-safe-p path)
+               (error "Refusing to edit: %s is not version-controlled" path))
+             (unless (file-exists-p path)
+               (error "File does not exist: %s" path))
+             (let ((content (with-temp-buffer
+                              (insert-file-contents path)
+                              (buffer-string))))
+               (unless (string-search old-text content)
+                 (error "old-text not found in %s" path))
+               (let ((new-content (string-replace old-text new-text content)))
+                 (with-temp-buffer
+                   (insert new-content)
+                   (write-region (point-min) (point-max) path nil 'silent))))
+             (format "Edited %s" path))
+ :description "Replace the first occurrence of OLD-TEXT with NEW-TEXT in the file at PATH. The file must be version-controlled. Use this for targeted edits without rewriting the whole file. Make OLD-TEXT long enough to uniquely identify the location."
+ :args (list '(:name "path"
+               :type string
+               :description "Absolute path to the file to edit.")
+             '(:name "old-text"
+               :type string
+               :description "The exact text to find and replace. Must match exactly, including whitespace and newlines.")
+             '(:name "new-text"
+               :type string
+               :description "The replacement text."))
+ :include nil
+ :confirm nil)
+#+end_src
+
+** Help
+
+Tools for Emacs introspection: functions, variables, apropos, info.
+
+*** describe_function
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "describe_function"
+ :category "help"
+ :function (lambda (name)
+             (gptel-tools--capture-describe
+              (lambda () (describe-function (intern name)))))
+ :description "Return the documentation and signature for an Emacs function by name. Use this to look up how a function works, its arguments, and its docstring before calling it. Equivalent to `C-h f'."
+ :args (list '(:name "name"
+               :type string
+               :description "The function name as a string, e.g. \"find-file\""))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** describe_variable
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "describe_variable"
+ :category "help"
+ :function (lambda (name)
+             (gptel-tools--capture-describe
+              (lambda () (describe-variable (intern name)))))
+ :description "Return the documentation and current value of an Emacs variable by name. Use this to check what a variable is set to and what it does. Equivalent to `C-h v'."
+ :args (list '(:name "name"
+               :type string
+               :description "The variable name as a string, e.g. \"org-agenda-files\""))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** apropos_search
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "apropos_search"
+ :category "help"
+ :function (lambda (pattern)
+             (let ((display-buffer-overriding-action
+                    '(display-buffer-no-window . ((allow-no-window . t)))))
+               (apropos pattern))
+             (with-current-buffer (get-buffer "*Apropos*")
+               (buffer-string)))
+ :description "Search for Emacs symbols (functions, variables, etc.) matching PATTERN. PATTERN is a regexp. Returns a list of matching symbol names with brief descriptions. Use this to discover available functions and variables when you are unsure of the exact name. Equivalent to `M-x apropos'."
+ :args (list '(:name "pattern"
+               :type string
+               :description "A regexp to match against symbol names, e.g. \"project.*root\""))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** read_info_node
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "read_info_node"
+ :category "help"
+ :function (lambda (node)
+             (let ((display-buffer-overriding-action
+                    '(display-buffer-no-window . ((allow-no-window . t)))))
+               (info node))
+             (with-current-buffer (get-buffer "*info*")
+               (buffer-string)))
+ :description "Read an Emacs Info documentation node and return its text content. NODE should be specified as \"(manual)NodeName\", for example: \"(elisp)Buffers\", \"(org)Capture\", \"(emacs)Dired\". Use this to look up authoritative documentation for Emacs features and APIs."
+ :args (list '(:name "node"
+               :type string
+               :description "Info node address e.g. \"(elisp)Buffer Contents\""))
+ :include nil
+ :confirm nil)
+#+end_src
+
+* Loading
+
+To reload in session (just load, don't wipe gptel--tools first):
+
+#+begin_src emacs-lisp :tangle no
+(load "~/.config/emacs/gptel-tools.el")
+#+end_src
+
+To load permanently, add to =emacs.org=:
+
+#+begin_src emacs-lisp :tangle no
+(when (file-exists-p "~/.config/emacs/gptel-tools.el")
+  (load "~/.config/emacs/gptel-tools.el"))
+#+end_src
