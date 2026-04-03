@@ -6,6 +6,10 @@
 Literate configuration for Claude's Emacs-native tools. Tangles to
 =~/.config/emacs/gptel-tools.el=.
 
+#+begin_src emacs-lisp
+;;; gptel-tools.el --- GPTel tools -*- lexical-binding: t; -*-
+#+end_src
+
 * Helpers
 
 #+begin_src emacs-lisp
@@ -80,13 +84,11 @@ Tools for reading and writing files. Write operations require VC tracking.
  :name "write_file"
  :category "filesystem"
  :function (lambda (path content)
-             (unless (gptel-tools--vc-safe-p path)
-               (error "Refusing to write: %s is not version-controlled" path))
              (with-temp-buffer
                (insert content)
                (write-region (point-min) (point-max) path nil 'silent))
              (format "Wrote %s" path))
- :description "Write CONTENT to FILE, overwriting it. Only works on VC-tracked files."
+ :description "Write CONTENT to FILE, overwriting it. Requires confirmation if the file is not version-controlled."
  :args (list '(:name "path"
                :type string
                :description "Absolute path to the file")
@@ -94,7 +96,8 @@ Tools for reading and writing files. Write operations require VC tracking.
                :type string
                :description "New file contents"))
  :include nil
- :confirm nil)
+ :confirm (lambda (path _content)
+            (not (gptel-tools--vc-safe-p path))))
 #+end_src
 
 *** edit_file
@@ -104,8 +107,6 @@ Tools for reading and writing files. Write operations require VC tracking.
  :name "edit_file"
  :category "filesystem"
  :function (lambda (path old-text new-text)
-             (unless (gptel-tools--vc-safe-p path)
-               (error "Refusing to edit: %s is not version-controlled" path))
              (unless (file-exists-p path)
                (error "File does not exist: %s" path))
              (let ((content (with-temp-buffer
@@ -118,13 +119,364 @@ Tools for reading and writing files. Write operations require VC tracking.
                    (insert new-content)
                    (write-region (point-min) (point-max) path nil 'silent))))
              (format "Edited %s" path))
- :description "Replace the first occurrence of OLD-TEXT with NEW-TEXT in the file at PATH. The file must be version-controlled. Use this for targeted edits without rewriting the whole file. Make OLD-TEXT long enough to uniquely identify the location."
+ :description "Replace the first occurrence of OLD-TEXT with NEW-TEXT in the file at PATH. Use this for targeted edits without rewriting the whole file. Make OLD-TEXT long enough to uniquely identify the location. Requires confirmation if the file is not version-controlled."
  :args (list '(:name "path"
                :type string
                :description "Absolute path to the file to edit.")
              '(:name "old-text"
                :type string
                :description "The exact text to find and replace. Must match exactly, including whitespace and newlines.")
+             '(:name "new-text"
+               :type string
+               :description "The replacement text."))
+ :include nil
+ :confirm (lambda (path _old-text _new-text)
+            (not (gptel-tools--vc-safe-p path))))
+#+end_src
+
+** Web
+
+Tools for fetching content from the internet.
+
+*** Shared helpers
+
+#+begin_src emacs-lisp
+(defvar gptel-tools--web-search-active nil)
+
+(defun gptel-tools--fetch-with-timeout (url url-cb tool-cb failed-msg &rest args)
+  "Fetch URL and call URL-CB in the result buffer.
+
+Call TOOL-CB if there is an error or a timeout.  TOOL-CB and ARGS are
+passed to URL-CB.  FAILED-MSG is a fragment used for messaging.  Handles
+cleanup."
+  (let* ((timeout 30) timer done
+         (inherit-process-coding-system t)
+         (proc-buffer
+          (url-retrieve
+           url (lambda (status)
+                 (setq done t)
+                 (when timer (cancel-timer timer))
+                 (if-let* ((err (plist-get status :error)))
+                     (funcall tool-cb
+                              (format "Error: %s failed with error: %S" failed-msg err))
+                   (apply url-cb tool-cb args))
+                 (kill-buffer (current-buffer)))
+           args 'silent)))
+    (setq timer
+          (run-at-time
+           timeout nil
+           (lambda (buf cb)
+             (unless done
+               (setq done t)
+               (let ((kill-buffer-query-functions)) (kill-buffer buf))
+               (funcall
+                cb (format "Error: %s timed out after %d seconds."
+                           failed-msg timeout))))
+           proc-buffer tool-cb))
+    proc-buffer))
+
+(defun gptel-tools--shr-next-link ()
+  "Jump to the next SHR link in the buffer.  Return jump position."
+  (let ((current-prop (get-char-property (point) 'shr-url))
+        (next-pos (point)))
+    (while (and (not (eobp))
+                (setq next-pos
+                      (or (next-single-property-change (point) 'shr-url)
+                          (point-max)))
+                (let ((next-prop (get-char-property next-pos 'shr-url)))
+                  (or (equal next-prop current-prop)
+                      (equal next-prop nil))))
+      (goto-char next-pos))
+    (goto-char next-pos)))
+#+end_src
+
+*** web_fetch
+
+#+begin_src emacs-lisp
+(defun gptel-tools--read-url (tool-cb url)
+  "Fetch URL text and call TOOL-CB with it."
+  (gptel-tools--fetch-with-timeout
+   url
+   (lambda (cb)
+     (goto-char (point-min)) (forward-paragraph)
+     (condition-case errdata
+         (let ((dom (libxml-parse-html-region (point) (point-max))))
+           (with-temp-buffer
+             (eww-score-readability dom)
+             (shr-insert-document (eww-highest-readability dom))
+             (decode-coding-region (point-min) (point-max) 'utf-8)
+             (funcall
+              cb (buffer-substring-no-properties
+                  (point-min) (point-max)))))
+       (error (funcall cb (format "Error: Request failed with error data:\n%S"
+                                  errdata)))))
+   tool-cb (format "Fetch for \"%s\"" url)))
+
+(gptel-make-tool
+ :function #'gptel-tools--read-url
+ :name "web_fetch"
+ :category "web"
+ :description "Fetch and read the contents of a URL.
+
+- Returns the text of the URL (not HTML) formatted for reading.
+- Request times out after 30 seconds."
+ :args '((:name "url"
+          :type "string"
+          :description "The URL to read"))
+ :async t
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** web_search
+
+#+begin_src emacs-lisp
+(defun gptel-tools--web-search-callback (cb)
+  "Extract website text and run callback CB with it."
+  (let* ((count 5) (results))
+    (goto-char (point-min))
+    (goto-char url-http-end-of-headers)
+    (let* ((dom (libxml-parse-html-region (point) (point-max)))
+           (result-count 0))
+      (eww-score-readability dom)
+      (with-temp-buffer
+        (shr-insert-document (eww-highest-readability dom))
+        (goto-char (point-min))
+        (while (and (not (eobp)) (< result-count count))
+          (let ((pos (point))
+                (url (get-char-property (point) 'shr-url))
+                (next-pos (gptel-tools--shr-next-link)))
+            (when-let* (((stringp url))
+                        (idx (string-search "http" url))
+                        (url-fmt (url-unhex-string (substring url idx))))
+              (cl-incf result-count)
+              (push (concat url-fmt "\n\n"
+                            (string-trim
+                             (buffer-substring-no-properties pos next-pos))
+                            "\n\n----\n")
+                    results))))))
+    (funcall cb (apply #'concat (nreverse results)))))
+
+(defun gptel-tools--web-search (tool-cb query &optional count)
+  "Search the web for QUERY and call TOOL-CB with results.
+
+Call TOOL-CB with the results as a string.  QUERY is the search string.
+COUNT is the number of results to return (default 5)."
+  (require 'eww)
+  (require 'url-http)
+  ;; No more than two active searches at one time
+  (setq gptel-tools--web-search-active
+        (cl-delete-if-not
+         (lambda (buf) (and (buffer-live-p buf)
+                       (process-live-p (get-buffer-process buf))))
+         gptel-tools--web-search-active))
+  (if (>= (length gptel-tools--web-search-active) 2)
+      (progn (message "Web search: waiting for turn")
+             (run-at-time 5 nil #'gptel-tools--web-search
+                          tool-cb query count))
+    (push (gptel-tools--fetch-with-timeout
+           (concat eww-search-prefix (url-hexify-string query))
+           #'gptel-tools--web-search-callback
+           tool-cb (format "Web search for \"%s\"" query))
+          gptel-tools--web-search-active)))
+
+(gptel-make-tool
+ :name "web_search"
+ :category "web"
+ :function #'gptel-tools--web-search
+ :description "Search the web using eww's default search engine (DuckDuckGo). Returns the top five results, each with its URL and a text excerpt. Use the `web_fetch` tool to read the full contents of any result URL. Does not require an API key. Times out after 30 seconds."
+ :args (list '(:name "query"
+               :type string
+               :description "The search query, e.g. \"Emacs 30 new features\"")
+             '(:name "count"
+               :type integer
+               :description "Number of results to return (default 5)"
+               :optional t))
+ :include nil
+ :async t
+ :confirm nil)
+#+end_src
+
+** Buffers
+
+Tools for opening, reading, and editing live Emacs buffers.
+
+*** Shared helpers
+
+#+begin_src emacs-lisp
+(defun gptel-tools--get-buffer (buffer-name)
+  "Return the live buffer named BUFFER-NAME, or signal an error."
+  (or (get-buffer buffer-name)
+      (error "No buffer named %S" buffer-name)))
+
+(defun gptel-tools--buf-vc-safe-p (buffer-name)
+  "Return non-nil if the file visited by BUFFER-NAME is version-controlled."
+  (when-let* ((buf (get-buffer buffer-name))
+              (file (buffer-file-name buf)))
+    (vc-registered file)))
+#+end_src
+
+*** buffer_open
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_open"
+ :category "buffers"
+ :function (lambda (path)
+             (unless (file-exists-p path)
+               (error "File does not exist: %s" path))
+             (let ((buf (find-file-noselect path 'nowarn)))
+               (buffer-name buf)))
+ :description "Open a file into an Emacs buffer and return the buffer name. If the file is already open in a buffer, return that buffer's name without re-reading the file. Use the returned buffer name to address this buffer in subsequent buffer_* tool calls."
+ :args (list '(:name "path"
+               :type string
+               :description "Absolute path to the file to open."))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** buffer_read
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_read"
+ :category "buffers"
+ :function (lambda (buffer-name &optional start-line end-line)
+             (let ((buf (gptel-tools--get-buffer buffer-name)))
+               (with-current-buffer buf
+                 (if (and (null start-line) (null end-line))
+                     (buffer-substring-no-properties (point-min) (point-max))
+                   (let* ((total (car (buffer-line-statistics)))
+                          (lo (max 1 (or start-line 1)))
+                          (hi (min total (or end-line total))))
+                     (save-excursion
+                       (goto-char (point-min))
+                       (forward-line (1- lo))
+                       (let ((beg (point)))
+                         (forward-line (- hi lo -1))
+                         (buffer-substring-no-properties beg (point)))))))))
+ :description "Return the text contents of a buffer. With no line range, returns the entire buffer. With start-line and/or end-line, returns only those lines (1-indexed, inclusive). Use buffer_open first to get a buffer name for a file."
+ :args (list '(:name "buffer-name"
+               :type string
+               :description "The buffer name as returned by buffer_open, or any existing buffer name (e.g. \"*scratch*\").")
+             '(:name "start-line"
+               :type integer
+               :description "First line to return (1-indexed, inclusive). Defaults to 1."
+               :optional t)
+             '(:name "end-line"
+               :type integer
+               :description "Last line to return (1-indexed, inclusive). Defaults to the last line."
+               :optional t))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** buffer_write
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_write"
+ :category "buffers"
+ :function (lambda (buffer-name)
+             (let ((buf (gptel-tools--get-buffer buffer-name)))
+               (with-current-buffer buf
+                 (save-buffer))
+               (format "Saved %s" buffer-name)))
+ :description "Save a buffer to disk. Requires confirmation if the file under the buffer is not version-controlled. Use after buffer_insert, buffer_replace, or buffer_delete_lines to persist changes."
+ :args (list '(:name "buffer-name"
+               :type string
+               :description "The buffer name to save."))
+ :include nil
+ :confirm (lambda (buffer-name)
+            (not (gptel-tools--buf-vc-safe-p buffer-name))))
+#+end_src
+
+*** buffer_insert
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_insert"
+ :category "buffers"
+ :function (lambda (buffer-name line text)
+             (let ((buf (gptel-tools--get-buffer buffer-name)))
+               (with-current-buffer buf
+                 (save-excursion
+                   (goto-char (point-min))
+                   (forward-line (1- line))
+                   (insert text)
+                   (unless (string-suffix-p "\n" text)
+                     (insert "\n"))))
+               (format "Inserted text at line %d in %s" line buffer-name)))
+ :description "Insert text at a given line number in a buffer. The text is inserted before the existing content at that line; existing lines are pushed down. A trailing newline is added automatically if the text does not end with one. To append to the end of the buffer, use a line number beyond the last line. Use buffer_write to persist changes to disk."
+ :args (list '(:name "buffer-name"
+               :type string
+               :description "The buffer name to edit.")
+             '(:name "line"
+               :type integer
+               :description "Line number at which to insert (1-indexed). Use 1 to insert at the very top. To append, use a line number beyond the last line.")
+             '(:name "text"
+               :type string
+               :description "The text to insert. Should include any desired internal newlines."))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** buffer_delete_lines
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_delete_lines"
+ :category "buffers"
+ :function (lambda (buffer-name start-line end-line)
+             (let ((buf (gptel-tools--get-buffer buffer-name)))
+               (with-current-buffer buf
+                 (save-excursion
+                   (goto-char (point-min))
+                   (forward-line (1- start-line))
+                   (let ((beg (point)))
+                     (forward-line (- end-line start-line -1))
+                     (delete-region beg (point)))))
+               (format "Deleted lines %d-%d from %s" start-line end-line buffer-name)))
+ :description "Delete a range of lines from a buffer (1-indexed, inclusive). Does not write to disk; use buffer_write to persist. Read the buffer first with buffer_read to confirm line numbers before deleting."
+ :args (list '(:name "buffer-name"
+               :type string
+               :description "The buffer name to edit.")
+             '(:name "start-line"
+               :type integer
+               :description "First line to delete (1-indexed, inclusive).")
+             '(:name "end-line"
+               :type integer
+               :description "Last line to delete (1-indexed, inclusive)."))
+ :include nil
+ :confirm nil)
+#+end_src
+
+*** buffer_replace
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "buffer_replace"
+ :category "buffers"
+ :function (lambda (buffer-name old-text new-text)
+             (let ((buf (gptel-tools--get-buffer buffer-name)))
+               (with-current-buffer buf
+                 (let ((content (buffer-substring-no-properties
+                                 (point-min) (point-max))))
+                   (unless (string-search old-text content)
+                     (error "old-text not found in buffer %S" buffer-name)))
+                 (save-excursion
+                   (goto-char (point-min))
+                   (let ((case-fold-search nil))
+                     (search-forward old-text)
+                     (replace-match new-text t t))))
+               (format "Replaced text in %s" buffer-name)))
+ :description "Replace the first occurrence of OLD-TEXT with NEW-TEXT in a buffer. OLD-TEXT must match exactly (including whitespace and newlines). Make OLD-TEXT long enough to uniquely identify the location. Does not write to disk; use buffer_write to persist."
+ :args (list '(:name "buffer-name"
+               :type string
+               :description "The buffer name to edit.")
+             '(:name "old-text"
+               :type string
+               :description "The exact text to find and replace.")
              '(:name "new-text"
                :type string
                :description "The replacement text."))

@@ -912,9 +912,9 @@ Tried using llm and ellama but it sucks.
     (gptel-model 'claude-sonnet-4.6))
 #+end_src
 
-I'm writing my own gptel tools now, so load those from the tangle location. 
-
 #+begin_src elisp
+  (use-package gptel-agent
+    :config (gptel-agent-update))
 #+end_src
 
 By the way:
