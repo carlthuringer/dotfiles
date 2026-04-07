@@ -914,7 +914,13 @@ Tried using llm and ellama but it sucks.
 
 #+begin_src elisp
   (use-package gptel-agent
-    :config (gptel-agent-update))
+    :config
+    (let ((my-agents-dir (expand-file-name "agents/" user-emacs-directory)))
+      (if (file-directory-p my-agents-dir)
+          (setq gptel-agent-dirs (list my-agents-dir))
+        ;; keep bundled agents but remove dangerous tools
+        (setq gptel-agent-dirs (default-value 'gptel-agent-dirs))))
+    (gptel-agent-update))
 #+end_src
 
 By the way:
