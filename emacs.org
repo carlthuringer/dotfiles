@@ -1088,6 +1088,8 @@ Upgraded to emacs 29, eglot built-in now
                  '(terraform-mode . ("terraform-ls" "serve")))
     (add-to-list 'eglot-server-programs
                  '(jsonnet-mode . ("jsonnet-language-server" "-t")))
+    (add-to-list 'eglot-server-programs
+                 '(cue-mode . ("cue" "lsp")))
     (add-hook 'eglot-managed-mode-hook (lambda () (remove-hook 'flymake-diagnostic-functions 'eglot-flymake-backend)))
     :init
     (defun eglot-format-buffer-on-save ()
@@ -1217,7 +1219,6 @@ Disabled <2024-09-13 Fri> because it seems like Verb-mode is the successor.
   (restclient . t)
 #+end_src
 
-
 ** [[https://github.com/federicotdn/verb][Verb Mode]]
 An extension to org mode that supports sending http requests
 
@@ -1285,6 +1286,14 @@ I want to use lispy-mode when entering an elisp buffer.
 #+begin_src elisp
   (use-package lispy
     :hook (emacs-lisp-mode . lispy-mode))
+#+end_src
+** Markdown Mode
+#+begin_src elisp
+  (use-package markdown-mode)
+#+end_src
+** [[https://github.com/russell/cue-mode][CUE mode]]
+#+begin_src elisp
+  (use-package cue-mode)
 #+end_src
 * Org Mode
   :PROPERTIES:
