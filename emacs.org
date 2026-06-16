@@ -1035,17 +1035,6 @@ We also need sqlite until *emacs 29*
   (use-package sqlite3)
 #+end_src
 
-** TODO Company the autocompleter
-Company-mode is an autocompletion framework used happily by many other modes. http://company-mode.github.io/ We can pretty much turn it on for all programming modes, so that's what we will do.
-#+begin_src elisp :noweb-ref nil
-  (use-package company
-    :demand t
-    :diminish
-    :config
-    (global-company-mode +1))
-#+end_src
-
-
 ** [[https://github.com/minad/corfu][Corfu]] the autocompleter
 Company sucks, corfu is the new hotness with better native completion integrating with emacs. Also company has been breaking down for me lately.
 #+begin_src elisp
@@ -1073,8 +1062,6 @@ Flymake is built into emacs, but flycheck is better
 ** Yasnippet
 A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 
-I kept running into gross issues working with go-mode, since it seems
-to want to use yasnippet when company completes things...
 #+begin_src elisp
   (use-package yasnippet
     :hook ((prog-mode terraform-mode) . yas-minor-mode)
@@ -1504,7 +1491,6 @@ It's helpful to embed latex formulas sometimes when writing in org
 #+begin_src elisp
   (use-package cdlatex)
   (use-package auctex)
-  (use-package company-auctex)
 #+end_src
 ** Gnuplot
 Lets us do something cool with org tables: Plot them in gnuplot
