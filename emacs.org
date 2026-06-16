@@ -1035,14 +1035,33 @@ We also need sqlite until *emacs 29*
   (use-package sqlite3)
 #+end_src
 
-** Company the autocompleter
+** TODO Company the autocompleter
 Company-mode is an autocompletion framework used happily by many other modes. http://company-mode.github.io/ We can pretty much turn it on for all programming modes, so that's what we will do.
-#+begin_src elisp
+#+begin_src elisp :noweb-ref nil
   (use-package company
     :demand t
     :diminish
     :config
     (global-company-mode +1))
+#+end_src
+
+
+** [[https://github.com/minad/corfu][Corfu]] the autocompleter
+Company sucks, corfu is the new hotness with better native completion integrating with emacs. Also company has been breaking down for me lately.
+#+begin_src elisp
+  (use-package corfu
+    :init
+    (global-corfu-mode))
+
+  (use-package emacs
+    :custom
+    ;; Enable indentation+completion with TAB key instead of M-TAB
+    (tab-always-indent 'complete)
+    ;; Emacs 30 and newer, Disable ISpell
+    (text-mode-ispell-word-completion nil)
+    ;; Hide commands in M-x which don't apply to the current mode. Hides Corfu commands
+    (read-extended-command-predicate #'command-completion-default-include-p)
+    )
 #+end_src
 
 ** Flycheck the better checker
@@ -1069,7 +1088,8 @@ Upgraded to emacs 29, eglot built-in now
     :ensure t
     :commands (eglot eglot-ensure)
     :hook
-    ((dockerfile-mode
+    ((cue-mode
+      dockerfile-mode
       go-mode
       go-ts-mode
       js-mode
