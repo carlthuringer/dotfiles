@@ -1295,8 +1295,14 @@ I want to use lispy-mode when entering an elisp buffer.
     :hook (emacs-lisp-mode . lispy-mode))
 #+end_src
 ** Markdown Mode
+   Soft-wrap prose and center it the same way we do for Org. =visual-line-mode=
+   lives in the preloaded built-in =simple.el=, so it needs no package of its own;
+   =visual-fill-column-mode= autoloads from the =visual-fill-column= package
+   configured under Org-Present.
 #+begin_src elisp
-  (use-package markdown-mode)
+  (use-package markdown-mode
+    :hook ((markdown-mode . visual-line-mode)
+           (markdown-mode . visual-fill-column-mode)))
 #+end_src
 ** [[https://github.com/russell/cue-mode][CUE mode]]
 #+begin_src elisp
@@ -1556,16 +1562,4 @@ You know what would be great? Automatic formatting in SQL buffers. Thanks, [[htt
     :init
     (setq sqlformat-command 'pgformatter
           sqlformat-args '("-s2" "-g" "-u2")))
-#+end_src
-* Kubernetes
-:PROPERTIES:
-:header-args: :noweb-ref kubernetes
-:END:
-It's a neat thing! Ok, let's try using this kubernetes porcelain
-#+begin_src elisp
-    (use-package kubernetes
-      :commands (kubernetes-overview)
-      :custom
-      kubernetes-poll-frequency 3600
-      kubernetes-redraw-frequency 3600)
 #+end_src
