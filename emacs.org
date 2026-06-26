@@ -1305,8 +1305,18 @@ I want to use lispy-mode when entering an elisp buffer.
            (markdown-mode . visual-fill-column-mode)))
 #+end_src
 ** [[https://github.com/russell/cue-mode][CUE mode]]
+CUE definitions are written with a leading =#= (e.g. =#Renderable=), and
+=cue lsp= returns completion candidates that include that =#=. But cue-mode's
+syntax table leaves =#= as punctuation, so Emacs computes the completion region
+as starting /after/ the =#=. When cycling candidates in Corfu (whose
+=corfu-preview-current= inserts the selection inline) the full =#...= candidate
+gets dropped in after the existing =#=, doubling it (=tools.##ValuesConfigMap=).
+Giving =#= symbol-constituent syntax makes the completion field include the =#=
+so candidates replace it cleanly.
 #+begin_src elisp
-  (use-package cue-mode)
+  (use-package cue-mode
+    :config
+    (modify-syntax-entry ?# "_" cue-mode-syntax-table))
 #+end_src
 * Org Mode
   :PROPERTIES:
