@@ -1053,10 +1053,68 @@ Company sucks, corfu is the new hotness with better native completion integratin
     )
 #+end_src
 
-** Flycheck the better checker
-Flymake is built into emacs, but flycheck is better
+** Inline diagnostics (flymake + sideline)
+Eglot reports diagnostics through =flymake=, which is built into Emacs. By
+default flymake marks the fringe and shows the message in the echo area only
+when point is on the offending line. For a VS Code "Error Lens" feel I want the
+message to ride the end of the current line, always visible.
+
+[[https://github.com/emacs-sideline/sideline][sideline]] renders annotations in the right margin, and
+[[https://github.com/emacs-sideline/sideline-flymake][sideline-flymake]] feeds flymake diagnostics into it. Hooking on =flymake-mode=
+means this lights up in every eglot-managed buffer (CUE included) without a
+per-language hook. =sideline-flymake-display-mode= set to ='line= shows the
+diagnostics for the whole current line rather than only the one under point.
+
+=flymake-no-changes-timeout= is how long flymake waits after a change before
+re-checking. For eglot buffers diagnostics are pushed by the server (see
+=eglot-send-changes-idle-time= in the Eglot section), so this mainly governs
+non-LSP flymake backends; raised to match so nothing rechecks too eagerly.
+
+The delay above governs how soon errors *appear*, but I also want them to
+*disappear* the instant I resume typing — not linger for three stale seconds
+while I fix them. Flymake has no built-in knob for that asymmetry: its timeouts
+only schedule when the next check starts, never clear what's shown. So a small
+buffer-local =after-change-functions= hook clears Flymake's diagnostics on every
+edit. The fringe, echo area, and sideline all read from Flymake's diagnostic
+overlays, so clearing those clears every display at once — no sideline code
+involved. I use Flymake's own =flymake--clear-state= rather than deleting
+overlays by hand because it also nils the per-backend bookkeeping list, keeping
+state consistent for the next server report (which only does a full cleanup on
+its *first* report). Fresh diagnostics reappear when the backend next reports,
+after the idle delay.
 #+begin_src elisp
-  (use-package flycheck)
+  (use-package flymake
+    :straight nil
+    :custom
+    (flymake-no-changes-timeout 3.0)
+    :hook (flymake-mode . crt/flymake-clear-on-edit-setup)
+    :preface
+    (defun crt/flymake-clear-diagnostics-on-edit (&rest _)
+      "Immediately drop shown Flymake diagnostics on any buffer edit.
+  They reappear when the backend next reports, so errors clear the
+  instant I type but only re-appear after the idle delay."
+      (when (hash-table-p flymake--state)
+        (maphash (lambda (_backend state) (flymake--clear-state state))
+                 flymake--state)))
+    (defun crt/flymake-clear-on-edit-setup ()
+      "Add or remove the clear-on-edit hook with `flymake-mode'."
+      (if flymake-mode
+          (add-hook 'after-change-functions
+                    #'crt/flymake-clear-diagnostics-on-edit nil t)
+        (remove-hook 'after-change-functions
+                     #'crt/flymake-clear-diagnostics-on-edit t))))
+#+end_src
+
+#+begin_src elisp
+  (use-package sideline
+    :hook (flymake-mode . sideline-mode)
+    :custom
+    (sideline-backends-right '(sideline-flymake)))
+
+  (use-package sideline-flymake
+    :after sideline
+    :custom
+    (sideline-flymake-display-mode 'line))
 #+end_src
 
 ** Yasnippet
@@ -1069,7 +1127,6 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 #+end_src
 
 ** [[https://github.com/joaotavora/eglot][Eglot IDE features]]
-Upgraded to emacs 29, eglot built-in now
 #+begin_src elisp
   (use-package eglot
     :ensure t
@@ -1097,7 +1154,14 @@ Upgraded to emacs 29, eglot built-in now
                  '(jsonnet-mode . ("jsonnet-language-server" "-t")))
     (add-to-list 'eglot-server-programs
                  '(cue-mode . ("cue" "lsp")))
-    (add-hook 'eglot-managed-mode-hook (lambda () (remove-hook 'flymake-diagnostic-functions 'eglot-flymake-backend)))
+    :custom
+    ;; Wait this long after I stop typing before shipping changes to the
+    ;; language server. The server only computes diagnostics on what it's been
+    ;; told about, so a longer idle time stops it complaining about half-typed
+    ;; lines (e.g. "unexpected EOF") while I'm mid-thought. Tradeoff: completion
+    ;; / hover triggered inside this window may briefly reflect the pre-edit
+    ;; buffer. Bump higher if diagnostics still feel too eager.
+    (eglot-send-changes-idle-time 3.0)
     :init
     (defun eglot-format-buffer-on-save ()
       (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
