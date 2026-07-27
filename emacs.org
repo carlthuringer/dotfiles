@@ -612,16 +612,60 @@ Switching to the built-in modus themes
     (load-theme 'solarized-selenized-dark t))
 #+end_src
 
-** Mode Line
+** TODO Mode Line
 Smart mode line
-#+begin_src elisp
+#+begin_src elisp :noweb-ref nil
   (use-package smart-mode-line
     :demand t
     :config (sml/setup))
 #+end_src
 
-** Display Battery and Time
+modus regel
 #+begin_src elisp
+  (use-package modusregel
+    :straight (:host codeberg :repo "jjba23/modusregel" :branch "trunk")
+      :ensure t
+            :demand t
+  	  :config
+  	    ;; Simple example
+  (defun my-set-custom-modeline ()
+    (setq mode-line-format modusregel-format))
+
+  ;; Or more advanced control
+  ;; (defun my-set-custom-modeline ()
+  ;;   "Customize mode-line format using modusregel."
+  ;;   (setq mode-line-format (list
+  ;;                           modusregel-leading-str
+  ;;                           modusregel-remote-expr
+  ;;                           modusregel-buffer-name-expr
+  ;;                           modusregel-buffer-modified-str
+  ;;                           modusregel-buffer-read-only-str
+  ;;                           modusregel-spacer-str
+
+  ;;                           ;; Uncomment if nyan-mode is enabled above
+  ;;                           ;; modusregel-nyan-expr
+
+  ;;                           modusregel-spacer-str
+  ;;                           modusregel-line-number-str
+  ;;                           modusregel-column-number-str
+  ;;                           modusregel-spacer-str
+  ;;                           modusregel-buffer-position-str
+  ;;                           modusregel-spacer-str
+  ;;                           modusregel-vc-expr
+  ;;                           modusregel-major-mode-expr
+  ;;                           modusregel-eglot-expr
+  ;;                           modusregel-spacer-str
+  ;;                           modusregel-flymake-expr
+  ;;                           (ignore-errors keycast-mode-line))))
+
+  ;; Important hook
+  (add-hook 'after-change-major-mode-hook #'my-set-custom-modeline)
+
+  	    )
+#+end_src
+
+** TODO Display Battery and Time
+#+begin_src elisp :noweb-ref nil
   (use-package battery
     :straight nil
     :demand t
@@ -690,6 +734,7 @@ Using dired for file management is super great, but it's usually got too much de
            (dired-hide-details-mode 1))
     :custom
     (dired-hide-details-hide-symlink-targets nil)
+    (dired-dwim-target t)
     :hook
     (dired-mode . my/dired-details-setup)
     )
@@ -989,6 +1034,14 @@ And trim whitespace
      ) . ws-butler-mode))
 #+end_src
 
+I find myself turning on electric-pair mode all the time when I'm in prog mode.
+
+#+begin_src elisp
+  (use-package elec-pair
+    :straight nil
+    :hook (prog-mode . electric-pair-local-mode))
+#+end_src
+
 ** Projectile
    An eminently useful way to navigate git-based project directories.
    #+begin_src elisp :noweb-ref nil
@@ -1144,7 +1197,8 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
       tsx-ts-mode
       yaml-mode
       jsonnet-mode) . eglot-ensure)
-    ((terraform-mode
+    ((cue-mode
+      terraform-mode
       typescript-ts-mode) . eglot-format-buffer-on-save)
       
     :config
@@ -1337,7 +1391,8 @@ In order to better support python projects, it's helpful to have [[https://githu
 Better than using js-mode which gets cranky fast.
 #+begin_src elisp
   (use-package json-mode
-    :mode "\\.json\\'")
+    :mode (("\\.json\\'" . json-mode)
+           ("\\.jsonc\\'" . jsonc-mode)))
 #+end_src
 ** [[https://github.com/tminor/jsonnet-mode][JSONNET mode]]
 It's a programming language that emits JSON.
