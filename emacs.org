@@ -89,11 +89,7 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 
     <<org-mode>>
 
-    <<documentation>>
-
     <<database>>
-
-    <<kubernetes>>
 
     <<large-language-models>>
   #+end_src
@@ -162,18 +158,6 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
   installation concerns. So we'll defer package management to [[https://github.com/raxod502/straight.el#integration-with-use-package-1][straight.el]].
    
 ** Bootstrap =straight.el=
-   TODO: The latest emacs master renamed
-   =comp-deferred-compilation-deny-list= to
-   =native-comp-deferred-compilation-deny-list=, so straight is
-   bugging out. To fix it, let's first alias that back. Maybe soon it
-   will be fixed: https://github.com/raxod502/straight.el/issues/757
-
-   I actually disabled this now, let's see if it still work
-
-   #+begin_src elisp :noweb-ref nil
-     (setq native-comp-deferred-compilation-deny-list nil)
-   #+end_src
-
    #+begin_src elisp
      (defvar bootstrap-version)
      (setq straight-repository-branch "develop")
@@ -202,7 +186,6 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 ** Automatically install packages mentioned by use-package
    #+begin_src elisp
 		 (setq straight-use-package-by-default t)
-		 (setq use-package-always-defer t)
    #+end_src
 
 ** DISABLED Ensure that our exec path is configured
@@ -217,7 +200,7 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
        :config
        (exec-path-from-shell-initialize)
        :custom
-       (exec-path-from-shell-variables '("GITHUB_USER", "GITHUB_PACKAGE_PULL_TOKEN"))
+       (exec-path-from-shell-variables '("GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN"))
        )
    #+end_src
    
@@ -386,17 +369,6 @@ An alternative filtering system [[https://github.com/oantolin/orderless#selectru
     (completion-category-overrides '((file (styles basic partial-completion)))))
 #+end_src
 
-Make sorting more prescient
-#+begin_src elisp
-  (use-package selectrum-prescient
-    :demand t
-    :after selectrum
-    :custom
-    (prescient-save-file "~/.config/emacs/prescient")
-    :config
-    (selectrum-prescient-mode +1)
-    (prescient-persist-mode +1))
-#+end_src
 *** Consult
 Well this is a whole thingy. [[https://github.com/minad/consult][Consult]]
 #+begin_src elisp
@@ -523,9 +495,6 @@ Well this is a whole thingy. [[https://github.com/minad/consult][Consult]]
   )
 #+end_src
 
-#+RESULTS:
-: consult-history
-
 *** [[https://github.com/minad/marginalia][Marginalia]]
 #+begin_src elisp
   ;; Enable richer annotations using the Marginalia package
@@ -582,9 +551,6 @@ to Helm or Counsel users) and in normal buffers.
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
-#+RESULTS:
-| consult-preview-at-point-mode | embark-consult--upgrade-markers |
-
 ** Disable Auto-save and tempfiles
    #+begin_src elisp
      (use-package files
@@ -602,7 +568,7 @@ to Helm or Counsel users) and in normal buffers.
 #+end_src
 
 ** Theme
-Switching to the built-in modus themes
+The solarized-selenized family, always. (Tried the modus themes; not a fan.)
 #+begin_src elisp
   (use-package solarized-theme
     :demand t
@@ -612,14 +578,7 @@ Switching to the built-in modus themes
     (load-theme 'solarized-selenized-dark t))
 #+end_src
 
-** TODO Mode Line
-Smart mode line
-#+begin_src elisp :noweb-ref nil
-  (use-package smart-mode-line
-    :demand t
-    :config (sml/setup))
-#+end_src
-
+** Mode Line
 modus regel
 #+begin_src elisp
   (use-package modusregel
@@ -664,18 +623,6 @@ modus regel
   	    )
 #+end_src
 
-** TODO Display Battery and Time
-#+begin_src elisp :noweb-ref nil
-  (use-package battery
-    :straight nil
-    :demand t
-    :config (display-battery-mode 1))
-
-  (use-package time
-    :straight nil
-    :demand t
-    :config (display-time-mode 1))
-#+end_src
 ** Eshell
 In order to use sudo/tramp in eshell nicely, you must update the eshell modules list which doesn't include them by default.
 #+begin_src elisp
@@ -826,21 +773,12 @@ Use org-present to give presentations straight from org mode
     :init
     (add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide))
 #+end_src
-** [[https://emacs-tree-sitter.github.io/installation/][Tree Sitter Syntax Highlighting]]
+** Tree Sitter Syntax Highlighting
 It's a faster, better way of highlighting instead of font-lock whatever nonsense regexps.
 
-Tree sitter is built into emacs 29.
-
-In order to activate you must hook =tree-sitter-hl-mode= on any major modes for which you want it active
-#+begin_src elisp
-  (use-package tree-sitter)
-  (use-package tree-sitter-langs :after tree-sitter)
-#+end_src
-
-In order to actually install language libraries when they are not shipped with major modes (often not) you can install [[https://github.com/emacs-tree-sitter/tree-sitter-langs][tree-sitter-langs]] which offers a function =tree-sitter-langs-install-grammars= for downloading the latest grammars. It does not, however install them properly, so we need to do a little extra work... Maybe someday in elisp.
-#+begin_src elisp
-  (use-package tree-sitter-langs :commands tree-sitter-langs-install-grammars)
-#+end_src
+Tree sitter is built into emacs 29. [[https://github.com/renzmann/treesit-auto][treesit-auto]] installs grammars
+automatically and remaps major modes to their =-ts-mode= variants, so no
+manual grammar wrangling or =major-mode-remap-alist= maintenance is needed.
 
 #+begin_src elisp
   (use-package treesit-auto
@@ -849,48 +787,6 @@ In order to actually install language libraries when they are not shipped with m
     :config
     (treesit-auto-add-to-auto-mode-alist 'all)
     (global-treesit-auto-mode))
-#+end_src
-
-With this installed, you must then follow the advice from [[https://www.masteringemacs.org/article/how-to-get-started-tree-sitter][MasteringEmacs: How to get started with tree sitter]]
-
-#+begin_quote
-The names of the files are <LANGUAGE>.so (or with your platform’s equivalent extension) which is not in keeping with the expected naming style in Emacs. You must first rename them so they’re named libtree-sitter-<LANGUAGE>.so. This is as good a time as any to learn how to bulk rename them with Emacs’s M-x dired and the editable dired buffers feature. 
-#+end_quote
-
-Editable dired is achieved by =C-x C-q=. The files must be moved to the emacs config directory, which is =~/.config/emacs/tree-sitter=
-
-Finally, there's a bit to actually supporting tree-sitter... that is, if a major mode doesn't already upgrade itself to the =major-ts-mode= then it won't just... work. You would have to update the =auto-mode-alist= entry for that mode, which comes from... somewhere? Actually it's a lot easier to just customize =major-mode-remap-alist=.
-
-First find all the modes with =C-h a= and =-ts-mode$= for the apropos search. That gives you a list of supported tree sitter modes given your current set of packages. Probably.
-
-Then update the following snippet to add mappings from the non-ts mode to the ts-mode which will occur transparently.
-
-#+begin_src elisp :noweb-ref nil
-  (use-package files
-    :straight nil
-    :init
-    (setq major-mode-remap-alist
-          '(
-            (bash-mode . bash-ts-mode)
-            (c++-mode . c++-ts-mode)
-            (c-or-c++-mode . c-or-c++-ts-mode)
-            (cmake-mode . cmake-ts-mode)
-            (csharp-mode . csharp-ts-mode)
-            (css-mode . css-ts-mode)
-            (dockerfile-mode . dockerfile-ts-mode)
-            (go-mod-mode . go-mod-ts-mode)
-            (go-mode . go-ts-mode)
-            (java-mode . java-ts-mode)
-            (js-mode . js-ts-mode)
-            (js2-mode . js-ts-mode)
-            (json-mode . json-ts-mode)
-            (python-mode . python-ts-mode)
-            (ruby-mode . ruby-ts-mode)
-            (rust-mode . rust-ts-mode)
-            (toml-mode . toml-ts-mode)
-            (tsx-mode . tsx-ts-mode)
-            (typescript-mode . typescript-ts-mode)
-            (yaml-mode . yaml-ts-mode))))
 #+end_src
 ** Safe local variables
 Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
@@ -1042,27 +938,8 @@ I find myself turning on electric-pair mode all the time when I'm in prog mode.
     :hook (prog-mode . electric-pair-local-mode))
 #+end_src
 
-** Projectile
-   An eminently useful way to navigate git-based project directories.
-   #+begin_src elisp :noweb-ref nil
-     (use-package projectile
-       :diminish
-       :init (projectile-mode +1)
-       :bind-keymap ("C-c p" . projectile-command-map)
-       :custom
-       (projectile-enable-caching t))
-   #+end_src
-
-   And let's get the counsel integration support in.
-   #+begin_src elisp :noweb-ref nil
-     (use-package counsel-projectile
-       :diminish
-       :after projectile
-       :init (counsel-projectile-mode 1))
-   #+end_src
-
-*** Or project.el?
-Project is built into emacs! Why are we using projectile?
+** Project.el
+Project navigation with the built-in project.el.
 #+begin_src elisp
   (use-package project
     :demand t)
@@ -1081,11 +958,6 @@ In my quest to increase my productivity, what if I could do all the github PR wo
 #+begin_src elisp
   (use-package forge
     :after magit)
-#+end_src
-
-We also need sqlite until *emacs 29*
-#+begin_src elisp
-  (use-package sqlite3)
 #+end_src
 
 ** [[https://github.com/minad/corfu][Corfu]] the autocompleter
@@ -1270,22 +1142,9 @@ Prettier formatting for javascript
 #+end_src
 
 ** Typescript
-#+begin_src elisp
-  (use-package typescript-mode
-    :mode "\\.ts?\\'"
-    :custom
-    (typescript-indent-level 2))
-#+end_src
-
-And for tsx files, =tsx-ts-mode=
-#+begin_src elisp
-  (use-package tsx-ts-mode
-    :straight (:type git :host github :repo "orzechowskid/tsx-mode.el")
-    :mode "\\.((j|t)sx?|html)\\'"
-    :custom
-    (typescript-indent-level 2)
-    )
-#+end_src
+Handled entirely by the built-in =typescript-ts-mode= and =tsx-ts-mode=:
+treesit-auto registers the file extensions and installs the grammars, and
+eglot hooks onto the ts modes above.
 ** Golang
 #+begin_src elisp
   (use-package go-mode
@@ -1309,7 +1168,8 @@ And for tsx files, =tsx-ts-mode=
 
 And to be even cooler, add it to =org-babel= with =ob-go=
 #+begin_src elisp
-  (use-package ob-go)
+  ;; Deferred: org-babel-do-load-languages requires it when org loads.
+  (use-package ob-go :defer t)
 #+end_src
 
 #+begin_src elisp :noweb-ref org-babel-load-languages
@@ -1327,33 +1187,14 @@ Prerequisite brew or linuxbrew
   brew install hashicorp/tap/terraform-ls
 #+end_src
 
-** [Disabled] Rest Client
-This is a portable, useful way to use emacs as a REST http client.
-
-Disabled <2024-09-13 Fri> because it seems like Verb-mode is the successor.
-
-#+begin_src elisp :noweb-ref nil
-  (use-package restclient)
-  (use-package ob-restclient :after org)
-  (use-package cl-lib)
-  (use-package jq-mode
-    :demand t)
-#+end_src
-
-#+begin_src elisp :noweb-ref nil
-  (restclient . t)
-#+end_src
-
 ** [[https://github.com/federicotdn/verb][Verb Mode]]
 An extension to org mode that supports sending http requests
 
 #+begin_src elisp
-  (use-package verb)
-#+end_src
-
-Let's also add the org config for it
-#+begin_src elisp :noweb-ref org-config
-  (define-key org-mode-map (kbd "C-c C-r") verb-command-map)
+  (use-package verb
+    :after org
+    :config
+    (define-key org-mode-map (kbd "C-c C-r") verb-command-map))
 #+end_src
 
 #+begin_src elisp :noweb-ref org-babel-load-languages
@@ -1398,7 +1239,7 @@ Better than using js-mode which gets cranky fast.
 It's a programming language that emits JSON.
 #+begin_src elisp
   (use-package jsonnet-mode
-    :mode "\\.\\(lib|j\\)sonnet\\'")
+    :mode "\\.\\(lib\\|j\\)sonnet\\'")
 #+end_src
 ** [[https://github.com/eki3z/mise.el][Mise.el]]
 Handles dev tools, runtimes and languages, installation thereof. Better than ASDF.
@@ -1452,8 +1293,7 @@ so candidates replace it cleanly.
      (use-package org
        :diminish
        :bind (("C-c l" . org-store-link)
-              ("C-c a" . org-agenda)
-              ("C-c c" . org-capture))
+              ("C-c a" . org-agenda))
        :custom
        (org-export-backends '(ascii latex html md))
        <<org-custom>>
@@ -1588,7 +1428,7 @@ One thing I've noticed with using =org-roam-dailies= is that I create a bunch of
 
 Therefore I happened upon [[https://github.com/bastibe/org-journal][org-journal]], which seems to do exactly what I want.
 
-I will configure org-journal to place my journals in =~/org/journal=, and use a yearly file format.
+I will configure org-journal to place my journals in =~/org/journal=, and use a yearly file format. It also owns =C-c c= — the org-capture binding it replaces is gone.
 #+begin_src elisp :noweb yes :no-export yes
   (use-package org-journal
     :demand t
@@ -1625,7 +1465,9 @@ This is a neat snippet found on the github page for org-journal:
 It's helpful to embed latex formulas sometimes when writing in org
 #+begin_src elisp
   (use-package cdlatex)
-  (use-package auctex)
+  ;; AUCTeX doesn't provide an `auctex' feature, so it can't be loaded
+  ;; eagerly by use-package; defer and rely on its autoloads.
+  (use-package auctex :defer t)
 #+end_src
 ** Gnuplot
 Lets us do something cool with org tables: Plot them in gnuplot
@@ -1650,20 +1492,6 @@ And let's also enable org-babel plotting.
   (gnuplot . t)
 #+end_src
 
-* Documentation
-  :PROPERTIES:
-  :header-args: :noweb-ref documentation
-  :END:
-** PlantUML Mode
-   https://plantuml.com/ is a gross-looking but powerful language for
-   markup. Lately it has become a lot less gross but the website is
-   still stuffed with ads.
-
-   #+begin_src elisp
-     (use-package plantuml-mode
-       :magic ("%PUML" . saplantuml-mode)
-       )
-   #+end_src
 * Database
 :PROPERTIES:
 :header-args: :noweb-ref database
