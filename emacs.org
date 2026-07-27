@@ -29,7 +29,8 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
      :header-args: :noweb-ref reference-name
    #+end_example
 ** What version of Emacs are we targeting?
-I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gain access to built-in tree-sitter and eglot.
+Emacs 30. Originally written against 29 to gain built-in tree-sitter and
+eglot; 30 additionally builds in which-key and editorconfig.
 
 * Disable packages on startup
   First of all, let's disable loading all available packages at
@@ -42,8 +43,6 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 
   #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
     (setq package-enable-at-startup nil)
-
-    (server-start)
 
     ;; Some things from emacs bedrock!
     ;; https://git.sh.ht/~ashton314/emacs-bedrock
@@ -62,6 +61,12 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
     (tool-bar-mode -1)                      ; All these tools are in the menu-bar anyway
     (menu-bar-mode -1)
     (setq default-frame-alist '((fullscreen . maximized)
+
+                                ;; Setting the font here (rather than with
+                                ;; set-face-font at init time) covers
+                                ;; emacsclient/daemon frames and avoids a
+                                ;; font flash at startup.
+                                (font . "Fira Code-14")
 
                                 ;; You can turn off scroll bars by uncommenting these lines:
                                 ;; (vertical-scroll-bars . nil)
@@ -208,7 +213,11 @@ I've upgraded to Emacs 29, which is the not-quite-bleeding edge, in order to gai
 Homebrew keeps info files in =/opt/homebrew/share/info=. They won't show
 up in emacs' info browser unless they're added to the =Info-directory-list=
 #+begin_src elisp
-  (add-to-list 'Info-directory-list "/opt/homebrew/share/info")
+  ;; Info-additional-directory-list is merged into the search path when
+  ;; info initializes; pre-seeding Info-directory-list at startup would
+  ;; suppress the default path computation entirely.
+  (with-eval-after-load 'info
+    (add-to-list 'Info-additional-directory-list "/opt/homebrew/share/info"))
 #+end_src
 
 ** Add some homebrew bins on macos
@@ -230,6 +239,19 @@ Man pages can't be read with the macos-bundled version of sed. Let's have it use
      
 #+end_src
 
+** Emacs server
+Start the server here (guarded) instead of in early-init, where it ran
+before the GUI was up and errored whenever another instance already owned
+the socket.
+#+begin_src elisp
+  (use-package server
+    :straight nil
+    :demand t
+    :config
+    (unless (server-running-p)
+      (server-start)))
+#+end_src
+
 * General User Interface
   :PROPERTIES:
   :header-args: :noweb-ref user-interface
@@ -246,19 +268,14 @@ Man pages can't be read with the macos-bundled version of sed. Let's have it use
    Instead of issuing a system beep, use visible bell, which flashes
    the frame when a bell occurs. Test by smashing =C-g=
    #+begin_src elisp
-     (setq visible-bell 1)
+     (setq visible-bell t)
    #+end_src
 
 ** Font: Fira Code
    Pretty much my favorite font for programming right now. Has the
-   most ligatures and is quite well supported across platforms.
-   #+begin_src elisp
-     (use-package faces
-       :straight nil
-       :config
-       ;; Set my preferred font.
-       (set-face-font 'default "Fira Code-14"))
-   #+end_src
+   most ligatures and is quite well supported across platforms. The font
+   itself is set via =default-frame-alist= in early-init so daemon frames
+   get it too.
 
    To enable ligatures on the latest emacs, we have to use the
    ligature.el package
@@ -312,10 +329,11 @@ Man pages can't be read with the macos-bundled version of sed. Let's have it use
    
 ** which-key help me remember which key to press
    #+begin_src elisp
+     ;; Built into Emacs 30, so no package install needed.
      (use-package which-key
+       :straight nil
        :diminish
        :demand t
-       :commands which-key-mode
        :config
        (which-key-mode))
    #+end_src
@@ -520,8 +538,6 @@ to Helm or Counsel users) and in normal buffers.
 
 #+begin_src elisp
   (use-package embark
-    :ensure t
-
     :bind
     (("C-<return>" . embark-act)         ;; pick some comfortable binding
      ("C-;" . embark-dwim)        ;; good alternative: M-.
@@ -546,7 +562,6 @@ to Helm or Counsel users) and in normal buffers.
 
   ;; Consult users will also want the embark-consult package.
   (use-package embark-consult
-    :ensure t
     :hook
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
@@ -555,9 +570,9 @@ to Helm or Counsel users) and in normal buffers.
    #+begin_src elisp
      (use-package files
        :straight nil
-       :custom (backup-directory-alist `((".*" . ,temporary-file-directory)))
-       (auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
-       (make-backup-files nil))
+       :custom
+       (make-backup-files nil)
+       (auto-save-default nil))
    #+end_src
 
 ** Silencing noisy warnings
@@ -573,6 +588,9 @@ The solarized-selenized family, always. (Tried the modus themes; not a fan.)
   (use-package solarized-theme
     :demand t
     :custom
+    ;; Themes are elisp, and `t' trusts them all. Kept deliberately:
+    ;; custom-file is null-device, so per-theme approvals can't persist,
+    ;; and every theme here comes from a pinned straight repo anyway.
     (custom-safe-themes t)
     :config
     (load-theme 'solarized-selenized-dark t))
@@ -583,12 +601,11 @@ modus regel
 #+begin_src elisp
   (use-package modusregel
     :straight (:host codeberg :repo "jjba23/modusregel" :branch "trunk")
-      :ensure t
-            :demand t
-  	  :config
-  	    ;; Simple example
-  (defun my-set-custom-modeline ()
-    (setq mode-line-format modusregel-format))
+    :demand t
+    :config
+    ;; Simple example
+    (defun my-set-custom-modeline ()
+      (setq mode-line-format modusregel-format))
 
   ;; Or more advanced control
   ;; (defun my-set-custom-modeline ()
@@ -617,10 +634,8 @@ modus regel
   ;;                           modusregel-flymake-expr
   ;;                           (ignore-errors keycast-mode-line))))
 
-  ;; Important hook
-  (add-hook 'after-change-major-mode-hook #'my-set-custom-modeline)
-
-  	    )
+    ;; Important hook
+    (add-hook 'after-change-major-mode-hook #'my-set-custom-modeline))
 #+end_src
 
 ** Eshell
@@ -669,7 +684,7 @@ This is a handy script that lets you expand the selection region at the point by
 ** Text Scaling
 You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands.
 #+begin_src elisp
-  (use-package default-text-scale :demand t :diminish t :config (default-text-scale-mode 1))
+  (use-package default-text-scale :demand t :diminish :config (default-text-scale-mode 1))
 #+end_src
 ** Dired
 Using dired for file management is super great, but it's usually got too much detail. So let's hide details by default.
@@ -712,6 +727,9 @@ I don't really do a multi-user thing and these lockfiles screw up =terraform-ls=
 ** Org-Present
 Use org-present to give presentations straight from org mode
 #+begin_src elisp
+  (defvar crt/org-present-previous-themes nil
+    "Themes that were active before `org-present' started.")
+
   (defun my/org-present-start ()
 
     ;; Tweak font sizes
@@ -730,7 +748,10 @@ Use org-present to give presentations straight from org mode
     (visual-fill-column-mode 1)
     (visual-line-mode 1)
 
-    (load-theme 'solarized-selenized-dark)
+    ;; Remember whatever themes are active (auto-dark may have chosen
+    ;; light or dark) and force the dark theme for presenting.
+    (setq crt/org-present-previous-themes custom-enabled-themes)
+    (load-theme 'solarized-selenized-dark t)
 
     (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
     (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
@@ -751,7 +772,12 @@ Use org-present to give presentations straight from org mode
 
     (visual-fill-column-mode 0)
     (visual-line-mode 0)
-    (load-theme 'solarized-selenized-light)
+    ;; Restore whatever was active before the presentation instead of
+    ;; assuming light, which fought auto-dark.
+    (dolist (theme custom-enabled-themes)
+      (disable-theme theme))
+    (dolist (theme (reverse crt/org-present-previous-themes))
+      (enable-theme theme))
     )
 
   (defun my/org-present-prepare-slide (buffer-name heading)
@@ -805,13 +831,12 @@ Sometimes I use =.dir-locals.el= to set local variable values for a given projec
 ** [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]]
 Allows you to edit a grep buffer and apply the changes directly. I like to combine it with embark to edit a bunch of occurrances of a thing.
 #+begin_src elisp
-  (use-package wgrep :ensure t)
+  (use-package wgrep)
 #+end_src
 ** [[https://github.com/LionyxML/auto-dark-emacs][Auto Dark Mode]]
 Bring emacs into modern realm, with dark mode
 #+begin_src elisp
   (use-package auto-dark
-    :ensure t
     :custom
     (auto-dark-themes '((solarized-selenized-dark) (solarized-selenized-light)))
     (auto-dark-allow-osascript t)
@@ -844,6 +869,8 @@ Tried using llm and ellama but it sucks.
     :bind
     (("C-x C-g" . gptel-menu))
     :config
+    ;; Private variable: wipes gptel's default backends so only the ones
+    ;; defined below exist. May break on gptel upgrades — check here first.
     (setq gptel--known-backends nil)
     (setq gptel-backend (gptel-make-gh-copilot "Copilot"))
     (gptel-make-anthropic "Claude" :key (gptel-api-key-from-auth-source "api.anthropic.com"))
@@ -877,7 +904,6 @@ A way of interfacing with Model Context Protocol servers with emacs as the clien
 
 #+begin_src elisp :noweb-ref nil
   (use-package mcp
-    :ensure t
     :after gptel
     :custom (mcp-hub-servers
              `(("fetch" . (:command "docker" :args ("run" "-i" "--rm" "mcp/fetch")))
@@ -1054,22 +1080,29 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 ** [[https://github.com/joaotavora/eglot][Eglot IDE features]]
 #+begin_src elisp
   (use-package eglot
-    :ensure t
     :commands (eglot eglot-ensure)
     :hook
+    ;; treesit-auto opens buffers in the -ts-mode variants, so those must
+    ;; be hooked alongside the classic modes or LSP silently won't start.
     ((cue-mode
       dockerfile-mode
+      dockerfile-ts-mode
       go-mode
       go-ts-mode
       js-mode
+      js-ts-mode
       nix-mode
       ruby-mode
+      ruby-ts-mode
       terraform-mode
       typescript-ts-mode
       tsx-ts-mode
       yaml-mode
+      yaml-ts-mode
       jsonnet-mode) . eglot-ensure)
     ((cue-mode
+      go-mode
+      go-ts-mode
       terraform-mode
       typescript-ts-mode) . eglot-format-buffer-on-save)
       
@@ -1147,23 +1180,32 @@ treesit-auto registers the file extensions and installs the grammars, and
 eglot hooks onto the ts modes above.
 ** Golang
 #+begin_src elisp
+  ;; Format-on-save is handled by gopls via eglot-format-buffer-on-save
+  ;; (see the Eglot section), covering both go-mode and go-ts-mode.
   (use-package go-mode
-    :config (add-hook 'before-save-hook #'gofmt-before-save)
+    :preface
+    (defun crt/go-tab-width ()
+      "Go uses hard tabs; render them narrow, in this buffer only."
+      (setq-local tab-width 2))
+    :hook ((go-mode go-ts-mode) . crt/go-tab-width)
     :custom
-    (tab-width 2)
     (compile-command "go build -v && go test -v && go vet"))
 
+  ;; gotest's commands are autoloaded, so the keys can be wired into both
+  ;; keymaps without loading the package (or go-mode) at startup.
   (use-package gotest
-    :after go-mode
-    :bind (:map go-mode-map
-                (("C-c C-t n" . go-test-current-test)
-                 ("C-c C-t f" . go-test-current-file)
-                 ("C-c C-t a" . go-test-current-project))
-                )
-    )
+    :defer t
+    :preface
+    (defun crt/gotest-keys (map)
+      (define-key map (kbd "C-c C-t n") #'go-test-current-test)
+      (define-key map (kbd "C-c C-t f") #'go-test-current-file)
+      (define-key map (kbd "C-c C-t a") #'go-test-current-project))
+    :init
+    (with-eval-after-load 'go-mode (crt/gotest-keys go-mode-map))
+    (with-eval-after-load 'go-ts-mode (crt/gotest-keys go-ts-mode-map)))
 
   (use-package gorepl-mode
-    :hook go-mode)
+    :hook ((go-mode go-ts-mode) . gorepl-mode))
 #+end_src
 
 And to be even cooler, add it to =org-babel= with =ob-go=
@@ -1220,8 +1262,7 @@ VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs
 Man, sometimes you want to write java but without all the icky boilerplate. I encounter this when it is used with jenkins.
 #+begin_src elisp
   (use-package groovy-mode
-    :mode "\\.Jenkinsfile\\'"
-    )
+    :mode "Jenkinsfile\\'")
 #+end_src
 ** Python
 In order to better support python projects, it's helpful to have [[https://github.com/jorgenschaefer/pyvenv][pyvenv]]
@@ -1368,9 +1409,17 @@ so candidates replace it cleanly.
          ))
     #+end_src
 
-    And make org babel stop asking to confirm code eval
+    Skip babel confirmation only for languages that can't touch the
+    system. Shell, sql, go, and elisp blocks still prompt, so a random
+    org file can't run code just because I pressed =C-c C-c= in it.
     #+begin_src elisp :noweb-ref org-custom
-      (org-confirm-babel-evaluate nil)
+      (org-confirm-babel-evaluate #'crt/org-confirm-babel-evaluate)
+    #+end_src
+
+    #+begin_src elisp :noweb-ref org-config
+      (defun crt/org-confirm-babel-evaluate (lang _body)
+        "Prompt before evaluating any language that can touch the system."
+        (not (member lang '("ditaa" "gnuplot" "verb"))))
     #+end_src
 ** Beamer Presentations
 Why use powerpoint or something for presentations when you can do all of it in org?
@@ -1407,7 +1456,6 @@ project notes. That's [[https://www.orgroam.com/][org-roam]].
 #+begin_src elisp
   (use-package org-roam
     :diminish
-    :ensure t
     :preface
     (setq org-roam-v2-ack t)
     :custom
