@@ -103,52 +103,17 @@ eglot; 30 additionally builds in which-key and editorconfig.
   :PROPERTIES:
   :header-args: :noweb-ref initialization-performance
   :END:
-  These are some arcana picked up from other initializations that
-  help with startup speed.
+  The old =file-name-handler-alist= save/restore dance is 2015-era
+  advice with negligible payoff on Emacs 30, so it's gone. What stays:
 
-  Let's set up a little scaffolding:
-  #+begin_src elisp :noweb yes :no-export yes
-    <<file-name-handler-alist-old>>
-
-    (setq
-     <<performance-tuning-before>>
-     )
-
-    (add-hook 'after-init-hook
-	      `(lambda ()
-		 (setq
-		  <<performance-tuning-after>>
-		  )
-		 (garbage-collect)) t)
-  #+end_src
-   
-** =file-name-handler-alist=
-   At initialization, this variable holds several complex regular
-   expressions that are evaluated on all file loading to determine if
-   they should go through a special handler function. During
-   initialization we don't want this so we first define a variable
-   and store it.
-   #+begin_src elisp :noweb-ref file-name-handler-alist-old
-     (defvar file-name-handler-alist-old file-name-handler-alist)
-   #+end_src
-
-   Then set it to nil before init
-   #+begin_src elisp :noweb-ref performance-tuning-before
-     file-name-handler-alist nil
-   #+end_src
-
-   And set it back after init
-   #+begin_src elisp :noweb-ref performance-tuning-after
-     file-name-handler-alist file-name-handler-alist-old
-   #+end_src
 ** =read-process-output-max=
-   This affects how many bites to read from the subprocess in a single
-   chunk. It defaults to 4kB, so let's up it to 1mB because we have a
-   big computer.
-   #+begin_src elisp :noweb-ref performance-tuning-after
-     read-process-output-max (* 1024 1024)
+   How many bytes to read from a subprocess in a single chunk. It
+   defaults to 4kB; language servers send large JSON payloads, so up
+   it to 1MB.
+   #+begin_src elisp
+     (setq read-process-output-max (* 1024 1024))
    #+end_src
-   
+
 * Bootstrapping
   :PROPERTIES:
   :header-args: :noweb-ref bootstrapping
@@ -182,15 +147,22 @@ eglot; 30 additionally builds in which-key and editorconfig.
        (load bootstrap-file nil 'nomessage))
    #+end_src
 
-** Install use-package if it isn't installed.
+** Use the built-in use-package
+   use-package and bind-key ship with Emacs 29+, so there's nothing to
+   install; straight's integration (the =:straight= keyword) hooks in
+   when use-package loads.
    #+begin_src elisp
-     (straight-use-package 'use-package)
+     (require 'use-package)
      (require 'bind-key)
    #+end_src
 
 ** Automatically install packages mentioned by use-package
    #+begin_src elisp
 		 (setq straight-use-package-by-default t)
+		 ;; Use the org bundled with Emacs 30 (9.7). Without this,
+		 ;; org-roam's dependency declaration would make straight
+		 ;; clone and build its own org, shadowing the built-in.
+		 (add-to-list 'straight-built-in-pseudo-packages 'org)
    #+end_src
 
 ** DISABLED Ensure that our exec path is configured
@@ -321,18 +293,15 @@ the socket.
          (advice-add command :after #'pulse-line)))
    #+end_src
 
-** =diminish=
-   Allows us to hide minor modes cluttering up our mode line.
-   #+begin_src elisp
-     (use-package diminish :demand t)
-   #+end_src
+** No =diminish= needed
+   The modusregel modeline shows only the major mode, so there are no
+   minor-mode lighters to hide.
    
 ** which-key help me remember which key to press
    #+begin_src elisp
      ;; Built into Emacs 30, so no package install needed.
      (use-package which-key
        :straight nil
-       :diminish
        :demand t
        :config
        (which-key-mode))
@@ -684,7 +653,7 @@ This is a handy script that lets you expand the selection region at the point by
 ** Text Scaling
 You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands.
 #+begin_src elisp
-  (use-package default-text-scale :demand t :diminish :config (default-text-scale-mode 1))
+  (use-package default-text-scale :demand t :config (default-text-scale-mode 1))
 #+end_src
 ** Dired
 Using dired for file management is super great, but it's usually got too much detail. So let's hide details by default.
@@ -931,14 +900,10 @@ Integrating using Agent Client Protocol instead of direct API usage.
   :END:
 All programming mode enhancements.
 ** Minor Tweaks
-Show Paren mode is always useful and built-in.
-#+begin_src elisp
-  (use-package paren
-    :straight nil
-    :hook ((prog-mode terraform-mode) . show-paren-mode))
-#+end_src
+(=show-paren-mode= used to be enabled here, but it's on globally by
+default since Emacs 28.)
 
-And trim whitespace
+Trim trailing whitespace on save
 #+begin_src elisp
   (straight-use-package
    '(ws-butler :type git
@@ -950,7 +915,6 @@ And trim whitespace
    :hook
    ((prog-mode
      markdown-mode
-     yaml-mode
      yaml-ts-mode
      terraform-mode
      ) . ws-butler-mode))
@@ -1085,9 +1049,7 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
     ;; treesit-auto opens buffers in the -ts-mode variants, so those must
     ;; be hooked alongside the classic modes or LSP silently won't start.
     ((cue-mode
-      dockerfile-mode
       dockerfile-ts-mode
-      go-mode
       go-ts-mode
       js-mode
       js-ts-mode
@@ -1097,11 +1059,9 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
       terraform-mode
       typescript-ts-mode
       tsx-ts-mode
-      yaml-mode
       yaml-ts-mode
       jsonnet-mode) . eglot-ensure)
     ((cue-mode
-      go-mode
       go-ts-mode
       terraform-mode
       typescript-ts-mode) . eglot-format-buffer-on-save)
@@ -1127,15 +1087,9 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
     (setq eglot-autoshutdown t))
 
 #+end_src
-** YAML
-#+begin_src elisp
-  (use-package yaml-mode)
-#+end_src
-
-** Dockerfiles
-#+begin_src elisp
-  (use-package dockerfile-mode)
-#+end_src
+** YAML and Dockerfiles
+Handled by the built-in =yaml-ts-mode= and =dockerfile-ts-mode=,
+registered by treesit-auto.
 ** Ruby
    All my favorite ruby programming configuration.
    And by the way, ruby-mode annoyingly inserts this magic comment. STOP
@@ -1149,7 +1103,7 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 This is even better than rspec mode for testing ruby, because it works for rspec and minitest.
 #+begin_src elisp
   (use-package ruby-test-mode
-    :hook (ruby-mode))
+    :hook (ruby-mode ruby-ts-mode))
 #+end_src
 ** HAML
 #+begin_src elisp
@@ -1179,33 +1133,24 @@ Handled entirely by the built-in =typescript-ts-mode= and =tsx-ts-mode=:
 treesit-auto registers the file extensions and installs the grammars, and
 eglot hooks onto the ts modes above.
 ** Golang
+Go buffers use the built-in =go-ts-mode= (registered by treesit-auto);
+gopls handles format-on-save through eglot (see the Eglot section).
 #+begin_src elisp
-  ;; Format-on-save is handled by gopls via eglot-format-buffer-on-save
-  ;; (see the Eglot section), covering both go-mode and go-ts-mode.
-  (use-package go-mode
-    :preface
-    (defun crt/go-tab-width ()
-      "Go uses hard tabs; render them narrow, in this buffer only."
-      (setq-local tab-width 2))
-    :hook ((go-mode go-ts-mode) . crt/go-tab-width)
-    :custom
-    (compile-command "go build -v && go test -v && go vet"))
+  (defun crt/go-setup ()
+    "Buffer-local Go settings: narrow hard tabs, go compile command."
+    (setq-local tab-width 2)
+    (setq-local compile-command "go build -v && go test -v && go vet"))
+  (add-hook 'go-ts-mode-hook #'crt/go-setup)
 
-  ;; gotest's commands are autoloaded, so the keys can be wired into both
-  ;; keymaps without loading the package (or go-mode) at startup.
+  ;; gotest's commands are autoloaded, so the keys can be wired up
+  ;; without loading the package at startup.
   (use-package gotest
     :defer t
-    :preface
-    (defun crt/gotest-keys (map)
-      (define-key map (kbd "C-c C-t n") #'go-test-current-test)
-      (define-key map (kbd "C-c C-t f") #'go-test-current-file)
-      (define-key map (kbd "C-c C-t a") #'go-test-current-project))
     :init
-    (with-eval-after-load 'go-mode (crt/gotest-keys go-mode-map))
-    (with-eval-after-load 'go-ts-mode (crt/gotest-keys go-ts-mode-map)))
-
-  (use-package gorepl-mode
-    :hook ((go-mode go-ts-mode) . gorepl-mode))
+    (with-eval-after-load 'go-ts-mode
+      (define-key go-ts-mode-map (kbd "C-c C-t n") #'go-test-current-test)
+      (define-key go-ts-mode-map (kbd "C-c C-t f") #'go-test-current-file)
+      (define-key go-ts-mode-map (kbd "C-c C-t a") #'go-test-current-project)))
 #+end_src
 
 And to be even cooler, add it to =org-babel= with =ob-go=
@@ -1269,12 +1214,11 @@ In order to better support python projects, it's helpful to have [[https://githu
 #+begin_src elisp
   (use-package pyvenv :commands pyvenv-activate)
 #+end_src
-** [[https://github.com/json-emacs/json-mode][JSON mode]]
-Better than using js-mode which gets cranky fast.
+** JSON
+Built-in =json-ts-mode=, registered by treesit-auto. Send =.jsonc= there
+too, since nothing claims it by default.
 #+begin_src elisp
-  (use-package json-mode
-    :mode (("\\.json\\'" . json-mode)
-           ("\\.jsonc\\'" . jsonc-mode)))
+  (add-to-list 'auto-mode-alist '("\\.jsonc\\'" . json-ts-mode))
 #+end_src
 ** [[https://github.com/tminor/jsonnet-mode][JSONNET mode]]
 It's a programming language that emits JSON.
@@ -1327,12 +1271,13 @@ so candidates replace it cleanly.
   using it for over a year and want to deepen my investment in org
   mode and org roam.
 ** Org
-   So org is built into emacs, but the version that is included with
-   gnu emacs is somewhat old.
+   Emacs 30 bundles Org 9.7, which is plenty new — use the built-in
+   rather than building it from straight (see the pseudo-package
+   registration in Bootstrapping).
 
    #+begin_src elisp :noweb yes :no-export yes
      (use-package org
-       :diminish
+       :straight nil
        :bind (("C-c l" . org-store-link)
               ("C-c a" . org-agenda))
        :custom
@@ -1348,7 +1293,7 @@ so candidates replace it cleanly.
 
    #+begin_src elisp
      (use-package org-indent
-       :straight org
+       :straight nil
        :hook (org-mode . org-indent-mode))
    #+end_src
 
@@ -1427,7 +1372,7 @@ Reference: [[https://github.com/fniessen/refcard-org-beamer]]
 
 #+begin_src elisp
   (use-package ox-latex
-    :straight org ;; Part of the Org package
+    :straight nil ;; Part of Org
     :custom (org-latex-listings t)
     :config
     (add-to-list 'org-latex-classes
@@ -1455,7 +1400,6 @@ project notes. That's [[https://www.orgroam.com/][org-roam]].
 
 #+begin_src elisp
   (use-package org-roam
-    :diminish
     :preface
     (setq org-roam-v2-ack t)
     :custom
@@ -1531,8 +1475,9 @@ Lets us do something cool with org tables: Plot them in gnuplot
 #+end_example
 
 #+begin_src elisp
+  ;; The gnuplot package already provides gnuplot-mode; the separate
+  ;; gnuplot-mode package would define the same mode twice.
   (use-package gnuplot)
-  (use-package gnuplot-mode)
 #+end_src
 
 And let's also enable org-babel plotting.
