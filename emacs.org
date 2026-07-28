@@ -32,18 +32,13 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
 Emacs 30. Originally written against 29 to gain built-in tree-sitter and
 eglot; 30 additionally builds in which-key and editorconfig.
 
-* Disable packages on startup
-  First of all, let's disable loading all available packages at
-  startup. This has to be done in the early-init file so we're making
-  an exception to the =noweb-ref= so that it doesn't get blended into
-  the main init file.
-  # PROBLEM: If I do this, then none of my packages are on the load
-  # path, so it's impossible to proceed and use other packages.
-  Solution: Use straight.el, and it tells me to do this.
+* Early Init
+  Frame appearance and startup tuning that must happen before the GUI
+  initializes. This tangles to a separate early-init file, so it's an
+  exception to the =noweb-ref= scheme. package.el's normal startup
+  activation stays enabled (disabling it was a straight.el-era thing).
 
   #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
-    (setq package-enable-at-startup nil)
-
     ;; Some things from emacs bedrock!
     ;; https://git.sh.ht/~ashton314/emacs-bedrock
 
@@ -118,51 +113,34 @@ eglot; 30 additionally builds in which-key and editorconfig.
   :PROPERTIES:
   :header-args: :noweb-ref bootstrapping
   :END:
-  I will be using one fancy package management framework, the
-  excellent [[https://github.com/jwiegley/use-package][use-package]] from [[https://github.com/jwiegley][John Wiegley]]. I'm also going to borrow
-  some of his example emacs initialization from his [[https://github.com/jwiegley/dot-emacs][dot-emacs]]
-  repository, but only a bit.
-
-  UPDATE: use-package isn't really a package manager, it's a package
-  configurere, and as such it isn't very good at complicated package
-  installation concerns. So we'll defer package management to [[https://github.com/raxod502/straight.el#integration-with-use-package-1][straight.el]].
+  Package management is entirely built-in: package.el installs from
+  the GNU and NonGNU ELPA archives (enabled by default) plus MELPA,
+  configured through [[https://github.com/jwiegley/use-package][use-package]] (bundled since Emacs 29). The =:vc=
+  keyword (new in Emacs 30) covers the rare package that lives only on
+  a git forge. This config previously used straight.el; the built-ins
+  made it unnecessary.
    
-** Bootstrap =straight.el=
+** Package archives
+   GNU and NonGNU ELPA are present by default; add MELPA.
    #+begin_src elisp
-     (defvar bootstrap-version)
-     (setq straight-repository-branch "develop")
-     (let ((bootstrap-file
-            (expand-file-name
-             "straight/repos/straight.el/bootstrap.el"
-             (or (bound-and-true-p straight-base-dir)
-                 user-emacs-directory)))
-           (bootstrap-version 7))
-       (unless (file-exists-p bootstrap-file)
-         (with-current-buffer
-             (url-retrieve-synchronously
-              "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-              'silent 'inhibit-cookies)
-           (goto-char (point-max))
-           (eval-print-last-sexp)))
-       (load bootstrap-file nil 'nomessage))
+     (require 'package)
+     (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
    #+end_src
 
 ** Use the built-in use-package
    use-package and bind-key ship with Emacs 29+, so there's nothing to
-   install; straight's integration (the =:straight= keyword) hooks in
-   when use-package loads.
+   install.
    #+begin_src elisp
      (require 'use-package)
      (require 'bind-key)
    #+end_src
 
 ** Automatically install packages mentioned by use-package
+   Built-in packages (org included) already satisfy package.el
+   dependency checks, so no shadowing tricks are needed; built-ins get
+   an explicit =:ensure nil=.
    #+begin_src elisp
-		 (setq straight-use-package-by-default t)
-		 ;; Use the org bundled with Emacs 30 (9.7). Without this,
-		 ;; org-roam's dependency declaration would make straight
-		 ;; clone and build its own org, shadowing the built-in.
-		 (add-to-list 'straight-built-in-pseudo-packages 'org)
+     (setq use-package-always-ensure t)
    #+end_src
 
 ** DISABLED Ensure that our exec path is configured
@@ -217,7 +195,7 @@ before the GUI was up and errored whenever another instance already owned
 the socket.
 #+begin_src elisp
   (use-package server
-    :straight nil
+    :ensure nil
     :demand t
     :config
     (unless (server-running-p)
@@ -253,7 +231,6 @@ the socket.
    ligature.el package
    #+begin_src elisp
      (use-package ligature
-       :straight '(ligature :type git :host github :repo "mickeynp/ligature.el")
        :demand t
        :config
        (ligature-set-ligatures 'prog-mode '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-" "::"
@@ -283,7 +260,7 @@ the socket.
    the built-in pulse mode. 
    #+begin_src elisp
      (use-package pulse
-       :straight nil
+       :ensure nil
        :demand t
        :config
        (defun pulse-line (&rest _)
@@ -301,7 +278,7 @@ the socket.
    #+begin_src elisp
      ;; Built into Emacs 30, so no package install needed.
      (use-package which-key
-       :straight nil
+       :ensure nil
        :demand t
        :config
        (which-key-mode))
@@ -311,7 +288,7 @@ the socket.
 Some fancy things like to show a minibuffer while you're in a minibuffer. Usually this is fine.
 #+begin_src elisp
   (use-package emacs
-    :straight nil
+    :ensure nil
     :init
     ;; Enable recursive minibuffers
     (setq enable-recursive-minibuffers t))
@@ -342,7 +319,7 @@ Save history across Emacs restarts, which Vertico uses to sort entries.
 #+begin_src elisp
   ;; Persist history over Emacs restarts. Vertico sorts by history position.
   (use-package savehist
-    :straight nil
+    :ensure nil
     :init
     (savehist-mode))
 #+end_src
@@ -538,7 +515,7 @@ to Helm or Counsel users) and in normal buffers.
 ** Disable Auto-save and tempfiles
    #+begin_src elisp
      (use-package files
-       :straight nil
+       :ensure nil
        :custom
        (make-backup-files nil)
        (auto-save-default nil))
@@ -547,7 +524,7 @@ to Helm or Counsel users) and in normal buffers.
 ** Silencing noisy warnings
 #+begin_src elisp
   (use-package warnings
-    :straight nil
+    :ensure nil
     :custom (warning-minimum-level :error))
 #+end_src
 
@@ -559,7 +536,7 @@ The solarized-selenized family, always. (Tried the modus themes; not a fan.)
     :custom
     ;; Themes are elisp, and `t' trusts them all. Kept deliberately:
     ;; custom-file is null-device, so per-theme approvals can't persist,
-    ;; and every theme here comes from a pinned straight repo anyway.
+    ;; and every theme here comes from a package archive anyway.
     (custom-safe-themes t)
     :config
     (load-theme 'solarized-selenized-dark t))
@@ -569,7 +546,11 @@ The solarized-selenized family, always. (Tried the modus themes; not a fan.)
 modus regel
 #+begin_src elisp
   (use-package modusregel
-    :straight (:host codeberg :repo "jjba23/modusregel" :branch "trunk")
+    ;; Not on any package archive; install directly from Codeberg.
+    ;; :ensure nil stops use-package-always-ensure from trying (and
+    ;; failing) an archive install before :vc runs.
+    :ensure nil
+    :vc (:url "https://codeberg.org/jjba23/modusregel" :branch "trunk" :rev :newest)
     :demand t
     :config
     ;; Simple example
@@ -611,7 +592,7 @@ modus regel
 In order to use sudo/tramp in eshell nicely, you must update the eshell modules list which doesn't include them by default.
 #+begin_src elisp
   (use-package esh-module
-    :straight nil
+    :ensure nil
     :demand t
     :custom
     (password-cache t)
@@ -659,7 +640,7 @@ You know sometimes you want to adjust the default text scaling, for reasons. Let
 Using dired for file management is super great, but it's usually got too much detail. So let's hide details by default.
 #+begin_src elisp
   (use-package dired
-    :straight nil
+    :ensure nil
     :preface
     (defun my/dired-details-setup () "Show less information in dired buffers"
            (dired-hide-details-mode 1))
@@ -787,7 +768,7 @@ manual grammar wrangling or =major-mode-remap-alist= maintenance is needed.
 Sometimes I use =.dir-locals.el= to set local variable values for a given project. This is a list of things which are safe to set so Emacs doesn't constantly get mad.
 #+begin_src elisp
   (use-package files
-    :straight nil
+    :ensure nil
     :custom
     (safe-local-variable-values
       '((eval setq jsonnet-library-search-directories
@@ -822,8 +803,8 @@ Yes, the evil AI is even in my emacs configuration.
 
 
 #+begin_src elisp
+  ;; Now on MELPA, so no custom recipe needed.
   (use-package copilot
-    :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
     :bind (:map copilot-completion-map
                 (("<tab>" . 'copilot-accept-completion)
                  ("TAB" . 'copilot-accept-completion))))
@@ -905,12 +886,6 @@ default since Emacs 28.)
 
 Trim trailing whitespace on save
 #+begin_src elisp
-  (straight-use-package
-   '(ws-butler :type git
-  	     :repo "https://github.com/emacsmirror/nongnu_elpa"
-  	     :branch "elpa/ws-butler"
-  	     :depth (full single-branch)
-  	     :local-repo "ws-butler"))
   (use-package ws-butler
    :hook
    ((prog-mode
@@ -924,7 +899,7 @@ I find myself turning on electric-pair mode all the time when I'm in prog mode.
 
 #+begin_src elisp
   (use-package elec-pair
-    :straight nil
+    :ensure nil
     :hook (prog-mode . electric-pair-local-mode))
 #+end_src
 
@@ -999,7 +974,7 @@ its *first* report). Fresh diagnostics reappear when the backend next reports,
 after the idle delay.
 #+begin_src elisp
   (use-package flymake
-    :straight nil
+    :ensure nil
     :custom
     (flymake-no-changes-timeout 3.0)
     :hook (flymake-mode . crt/flymake-clear-on-edit-setup)
@@ -1095,7 +1070,7 @@ registered by treesit-auto.
    And by the way, ruby-mode annoyingly inserts this magic comment. STOP
     #+begin_src elisp
       (use-package ruby-mode
-        :straight nil
+        :ensure nil
         :custom
         (ruby-insert-encoding-magic-comment nil))
     #+end_src
@@ -1112,7 +1087,7 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 ** Javascript
 #+begin_src elisp
   (use-package js
-    :straight nil
+    :ensure nil
     :custom
     (js-indent-level 2)
     (indent-tabs-mode nil))
@@ -1272,12 +1247,11 @@ so candidates replace it cleanly.
   mode and org roam.
 ** Org
    Emacs 30 bundles Org 9.7, which is plenty new — use the built-in
-   rather than building it from straight (see the pseudo-package
-   registration in Bootstrapping).
+   (=:ensure nil=) rather than installing a newer one.
 
    #+begin_src elisp :noweb yes :no-export yes
      (use-package org
-       :straight nil
+       :ensure nil
        :bind (("C-c l" . org-store-link)
               ("C-c a" . org-agenda))
        :custom
@@ -1293,7 +1267,7 @@ so candidates replace it cleanly.
 
    #+begin_src elisp
      (use-package org-indent
-       :straight nil
+       :ensure nil
        :hook (org-mode . org-indent-mode))
    #+end_src
 
@@ -1303,7 +1277,7 @@ so candidates replace it cleanly.
 
    #+begin_src elisp
      (use-package simple
-       :straight nil
+       :ensure nil
        :hook (org-mode . visual-line-mode))
    #+end_src
 
@@ -1372,7 +1346,7 @@ Reference: [[https://github.com/fniessen/refcard-org-beamer]]
 
 #+begin_src elisp
   (use-package ox-latex
-    :straight nil ;; Part of Org
+    :ensure nil ;; Part of Org
     :custom (org-latex-listings t)
     :config
     (add-to-list 'org-latex-classes
@@ -1494,7 +1468,7 @@ Emacs has built in modes for talking to databases through psql!
 Add the port parameter to the list of things that it checks for
 #+begin_src elisp
   (use-package sql
-    :straight nil
+    :ensure nil
     :config
     (add-to-list 'sql-postgres-login-params 'port t))
 #+end_src
