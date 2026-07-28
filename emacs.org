@@ -247,12 +247,16 @@ the socket.
        (global-ligature-mode 't))
    #+end_src
 
-** Disable the Customize interface updating my emacs file
+** Keep Customize out of my init file
    I like to know how and why various things are being set in my emacs
    files and therefore avoid the =customize-*= stuff that
-   automatically updates my emacs init file.
+   automatically updates my emacs init file. Point it at a real file
+   that never gets loaded — /not/ =null-device=, because package.el and
+   package-vc save state through customize mid-install, and
+   =find-file-noselect= on /dev/null aborts init with "Maximum buffer
+   size exceeded".
    #+begin_src elisp
-     (setq-default custom-file null-device)
+     (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
    #+end_src
 
 ** Pulse
@@ -535,7 +539,7 @@ The solarized-selenized family, always. (Tried the modus themes; not a fan.)
     :demand t
     :custom
     ;; Themes are elisp, and `t' trusts them all. Kept deliberately:
-    ;; custom-file is null-device, so per-theme approvals can't persist,
+    ;; custom-file is never loaded, so per-theme approvals can't persist,
     ;; and every theme here comes from a package archive anyway.
     (custom-safe-themes t)
     :config
