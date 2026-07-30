@@ -760,10 +760,18 @@ Tree sitter is built into emacs 29. [[https://github.com/renzmann/treesit-auto][
 automatically and remaps major modes to their =-ts-mode= variants, so no
 manual grammar wrangling or =major-mode-remap-alist= maintenance is needed.
 
+=treesit-auto-langs= must stay restricted to languages actually in use:
+=global-treesit-auto-mode= advises =set-auto-mode-0=, re-checking
+=treesit-ready-p= for every listed language on /every/ buffer's mode
+selection, and each missing grammar is a failed dlopen (~7ms) that is
+never cached. With the default ~60-language list that was ~1.4s added
+to every find-file.
+
 #+begin_src elisp
   (use-package treesit-auto
     :custom
     (treesit-auto-install t)
+    (treesit-auto-langs '(bash dockerfile go gomod javascript json ruby tsx typescript yaml))
     :config
     (treesit-auto-add-to-auto-mode-alist 'all)
     (global-treesit-auto-mode))
