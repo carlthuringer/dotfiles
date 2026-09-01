@@ -29,14 +29,12 @@ To install this configuration invoke =org-babel-tangle= with =C-x C-v C-t=
      :header-args: :noweb-ref reference-name
    #+end_example
 ** What version of Emacs are we targeting?
-Emacs 30. Originally written against 29 to gain built-in tree-sitter and
-eglot; 30 additionally builds in which-key and editorconfig.
+Emacs 31.
 
 * Early Init
   Frame appearance and startup tuning that must happen before the GUI
   initializes. This tangles to a separate early-init file, so it's an
-  exception to the =noweb-ref= scheme. package.el's normal startup
-  activation stays enabled (disabling it was a straight.el-era thing).
+  exception to the =noweb-ref= scheme.
 
   #+begin_src elisp :tangle ~/.config/emacs/early-init.el :mkdirp yes
     ;; Some things from emacs bedrock!
@@ -98,12 +96,9 @@ eglot; 30 additionally builds in which-key and editorconfig.
   :PROPERTIES:
   :header-args: :noweb-ref initialization-performance
   :END:
-  The old =file-name-handler-alist= save/restore dance is 2015-era
-  advice with negligible payoff on Emacs 30, so it's gone. What stays:
-
 ** =read-process-output-max=
    How many bytes to read from a subprocess in a single chunk. It
-   defaults to 4kB; language servers send large JSON payloads, so up
+   defaults to 64kB; language servers send large JSON payloads, so up
    it to 1MB.
    #+begin_src elisp
      (setq read-process-output-max (* 1024 1024))
@@ -117,8 +112,7 @@ eglot; 30 additionally builds in which-key and editorconfig.
   the GNU and NonGNU ELPA archives (enabled by default) plus MELPA,
   configured through [[https://github.com/jwiegley/use-package][use-package]] (bundled since Emacs 29). The =:vc=
   keyword (new in Emacs 30) covers the rare package that lives only on
-  a git forge. This config previously used straight.el; the built-ins
-  made it unnecessary.
+  a git forge.
    
 ** Package archives
    GNU and NonGNU ELPA are present by default; add MELPA.
@@ -136,29 +130,11 @@ eglot; 30 additionally builds in which-key and editorconfig.
    #+end_src
 
 ** Automatically install packages mentioned by use-package
-   Built-in packages (org included) already satisfy package.el
-   dependency checks, so no shadowing tricks are needed; built-ins get
-   an explicit =:ensure nil=.
+   Built-in packages get an explicit =:ensure nil=.
    #+begin_src elisp
      (setq use-package-always-ensure t)
    #+end_src
 
-** DISABLED Ensure that our exec path is configured
-   Emacs looks in the =exec-path= for binaries when invoking a shell
-   command. For better or worse we do still do much of our work with a
-   real shell, and not within the confines of emacs, so as a shortcut
-   we can configure the exec-path by using this helpful package, which
-   spawns a shell process and dumps the path.
-   #+begin_src elisp :noweb-ref nil :no-export yes
-     (use-package exec-path-from-shell
-       :demand t
-       :config
-       (exec-path-from-shell-initialize)
-       :custom
-       (exec-path-from-shell-variables '("GITHUB_USER" "GITHUB_PACKAGE_PULL_TOKEN"))
-       )
-   #+end_src
-   
 ** Make sure that Homebrew info directory is loaded if present
 Homebrew keeps info files in =/opt/homebrew/share/info=. They won't show
 up in emacs' info browser unless they're added to the =Info-directory-list=
@@ -190,9 +166,8 @@ Man pages can't be read with the macos-bundled version of sed. Let's have it use
 #+end_src
 
 ** Emacs server
-Start the server here (guarded) instead of in early-init, where it ran
-before the GUI was up and errored whenever another instance already owned
-the socket.
+Must run after the GUI is up, and guarded so nothing errors when
+another instance already owns the socket.
 #+begin_src elisp
   (use-package server
     :ensure nil
@@ -274,10 +249,6 @@ the socket.
          (advice-add command :after #'pulse-line)))
    #+end_src
 
-** No =diminish= needed
-   The modusregel modeline shows only the major mode, so there are no
-   minor-mode lighters to hide.
-   
 ** which-key help me remember which key to press
    #+begin_src elisp
      ;; Built into Emacs 30, so no package install needed.
@@ -299,7 +270,7 @@ Some fancy things like to show a minibuffer while you're in a minibuffer. Usuall
 #+end_src
 ** Completion Framework
 *** Vertico autocompletion
-Apparently Selectrum has [[https://github.com/minad/vertico/wiki/Migrating-from-Selectrum-to-Vertico][been replaced by vertico]], so I can finally fix ripgrep searches.
+[[https://github.com/minad/vertico][Vertico]] provides the vertical completion UI in the minibuffer.
 #+begin_src elisp
   (use-package vertico
     :init
@@ -328,7 +299,7 @@ Save history across Emacs restarts, which Vertico uses to sort entries.
     (savehist-mode))
 #+end_src
 
-An alternative filtering system [[https://github.com/oantolin/orderless#selectrum][orderless]].
+Flexible completion filtering with [[https://github.com/oantolin/orderless][orderless]].
 #+begin_src elisp
   (use-package orderless
     :demand t
@@ -533,7 +504,7 @@ to Helm or Counsel users) and in normal buffers.
 #+end_src
 
 ** Theme
-The solarized-selenized family, always. (Tried the modus themes; not a fan.)
+The solarized-selenized family, always.
 #+begin_src elisp
   (use-package solarized-theme
     :demand t
@@ -622,19 +593,27 @@ This is a handy script that lets you expand the selection region at the point by
     
 #+end_src
 ** Unfill paragraph
-- ref :: https://www.emacswiki.org/emacs/UnfillParagraph
-
+Emacs 31 ships =unfill-paragraph= natively; it just needs a binding.
   #+begin_src elisp
-    ;;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph    
-    (defun unfill-paragraph (&optional region)
-      "Takes a multi-line paragraph and makes it into a single line of text."
-      (interactive (progn (barf-if-buffer-read-only) '(t)))
-      (let ((fill-column (point-max))
-            ;; This would override `fill-column' if it's an integer.
-            (emacs-lisp-docstring-fill-column t))
-        (fill-paragraph nil region)))
-    (global-set-key "\M-Q" 'unfill-paragraph)
+    (keymap-global-set "M-Q" #'unfill-paragraph)
   #+end_src
+** Kill region DWIM
+New in Emacs 31: =C-w= with no active region kills the previous word
+(shell-style, whitespace-delimited) instead of complaining about the
+missing mark.
+#+begin_src elisp
+  (use-package simple
+    :ensure nil
+    :custom
+    (kill-region-dwim 'unix-word))
+#+end_src
+** Window layout (Emacs 31 built-ins, nothing to configure)
+Emacs 31 rearranges whole window layouts out of the box: =C-x w r
+<right>/<left>= rotates the layout, =C-x w f <up>/<right>= flips it,
+and =C-x w t= transposes it. It also splits along the longest frame
+edge by default (=split-window-preferred-direction= is =longest= now),
+which is what I'd have configured anyway. Noted here so I remember the
+keys; no code needed.
 ** Text Scaling
 You know sometimes you want to adjust the default text scaling, for reasons. Let's use =C-+= and =C-_= as commands.
 #+begin_src elisp
@@ -663,16 +642,8 @@ I got a new keyboard and it's pretty hard to type on. I need practice.
 
 To use this, use =M-x speed-type-buffer= or something similar to initiate a typing test in the current buffer.
 ** Cleaning up open file watches
-Emacs on Macos hits the ulimit of 1024 a lot. Here we define a function from the future that allows us to remove watches from the =file-notify-descriptors= list.
-#+begin_src elisp
-  (defun file-notify-rm-all-watches ()
-    "Remove all existing file notification watches from Emacs."
-    (interactive)
-    (maphash
-     (lambda (key _value)
-       (file-notify-rm-watch key))
-     file-notify-descriptors))
-#+end_src
+Emacs on Macos hits the ulimit of 1024 a lot. The built-in =M-x
+file-notify-rm-all-watches= clears them.
 ** Disable Lockfiles
 I don't really do a multi-user thing and these lockfiles screw up =terraform-ls=.
 #+begin_src elisp
@@ -726,8 +697,8 @@ Use org-present to give presentations straight from org mode
 
     (visual-fill-column-mode 0)
     (visual-line-mode 0)
-    ;; Restore whatever was active before the presentation instead of
-    ;; assuming light, which fought auto-dark.
+    ;; Restore whatever was active before the presentation (auto-dark
+    ;; may have chosen either).
     (dolist (theme custom-enabled-themes)
       (disable-theme theme))
     (dolist (theme (reverse crt/org-present-previous-themes))
@@ -766,6 +737,11 @@ manual grammar wrangling or =major-mode-remap-alist= maintenance is needed.
 selection, and each missing grammar is a failed dlopen (~7ms) that is
 never cached. With the default ~60-language list that was ~1.4s added
 to every find-file.
+
+Emacs 31 grew =treesit-auto-install-grammar= / =treesit-ensure-installed=,
+but its =treesit-language-source-alist= ships empty and no ts mode gets
+an =auto-mode-alist= entry, so treesit-auto still earns its keep (grammar
+recipes + mode registration). Re-evaluate at Emacs 32.
 
 #+begin_src elisp
   (use-package treesit-auto
@@ -815,7 +791,6 @@ Yes, the evil AI is even in my emacs configuration.
 
 
 #+begin_src elisp
-  ;; Now on MELPA, so no custom recipe needed.
   (use-package copilot
     :bind (:map copilot-completion-map
                 (("<tab>" . 'copilot-accept-completion)
@@ -824,8 +799,6 @@ Yes, the evil AI is even in my emacs configuration.
 #+end_src
 
 ** [[https://github.com/karthink/gptel][GPTel]]
-Tried using llm and ellama but it sucks.
-
 #+begin_src elisp
   (use-package gptel
     :bind
@@ -861,41 +834,12 @@ machine api.openai.com login apikey password sk-secret-openai-api-key-goes-here
 machine api.anthropic.com login apikey password sk-secret-anthropic-api-key-goes-here
 #+end_quote
 
-** [[https://github.com/lizqwerscott/mcp.el][MCP.el]]
-A way of interfacing with Model Context Protocol servers with emacs as the client.
-
-#+begin_src elisp :noweb-ref nil
-  (use-package mcp
-    :after gptel
-    :custom (mcp-hub-servers
-             `(("fetch" . (:command "docker" :args ("run" "-i" "--rm" "mcp/fetch")))
-               ("context7" . (:command "docker" :args ("run" "-i" "--rm" "context7-mcp")))))
-    :config (require 'mcp-hub)
-    :hook (after-init . mcp-hub-start-all-server))
-#+end_src
-
-
-** [[https://github.com/xenodium/agent-shell][agent-shell]]
-Integrating using Agent Client Protocol instead of direct API usage.
-*So this is basically a wrapper around the claude cli with extra steps. Not worth the trouble*
-
-#+begin_src elisp :noweb-ref nil
-  (use-package agent-shell
-    :ensure t
-    :ensure-system-package
-    ((claude . "brew install claude-code")
-     (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp")))
-#+end_src
-
 * Programming
   :PROPERTIES:
   :header-args: :noweb-ref programming-general
   :END:
 All programming mode enhancements.
 ** Minor Tweaks
-(=show-paren-mode= used to be enabled here, but it's on globally by
-default since Emacs 28.)
-
 Trim trailing whitespace on save
 #+begin_src elisp
   (use-package ws-butler
@@ -938,7 +882,7 @@ In my quest to increase my productivity, what if I could do all the github PR wo
 #+end_src
 
 ** [[https://github.com/minad/corfu][Corfu]] the autocompleter
-Company sucks, corfu is the new hotness with better native completion integrating with emacs. Also company has been breaking down for me lately.
+In-buffer completion popups built on Emacs' native completion machinery.
 #+begin_src elisp
   (use-package corfu
     :init
@@ -1019,6 +963,16 @@ after the idle delay.
     (sideline-flymake-display-mode 'line))
 #+end_src
 
+** Eldoc help at point
+New in Emacs 31: eldoc surfaces =help-at-pt= text (kbd-help /
+help-echo properties under point, e.g. from eglot).
+#+begin_src elisp
+  (use-package eldoc
+    :ensure nil
+    :custom
+    (eldoc-help-at-pt t))
+#+end_src
+
 ** Yasnippet
 A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 
@@ -1077,6 +1031,14 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
 ** YAML and Dockerfiles
 Handled by the built-in =yaml-ts-mode= and =dockerfile-ts-mode=,
 registered by treesit-auto.
+
+Emacs 31's =hs-indentation-mode= folds blocks by indentation, which is
+the only folding that makes sense in YAML.
+#+begin_src elisp
+  (use-package hideshow
+    :ensure nil
+    :hook (yaml-ts-mode . hs-indentation-mode))
+#+end_src
 ** Ruby
    All my favorite ruby programming configuration.
    And by the way, ruby-mode annoyingly inserts this magic comment. STOP
@@ -1104,17 +1066,6 @@ This is even better than rspec mode for testing ruby, because it works for rspec
     (js-indent-level 2)
     (indent-tabs-mode nil))
 #+end_src
-Prettier formatting for javascript
-#+begin_src elisp :noweb-ref nil
-  (use-package prettier
-    :hook ((typescript-mode
-            typescript-ts-mode
-            js-mode
-            js2-mode
-            tsx-ts-mode) . prettier-mode)
-  )
-#+end_src
-
 ** Typescript
 Handled entirely by the built-in =typescript-ts-mode= and =tsx-ts-mode=:
 treesit-auto registers the file extensions and installs the grammars, and
@@ -1128,17 +1079,12 @@ gopls handles format-on-save through eglot (see the Eglot section).
     (setq-local tab-width 2)
     (setq-local compile-command "go build -v && go test -v && go vet"))
   (add-hook 'go-ts-mode-hook #'crt/go-setup)
-
-  ;; gotest's commands are autoloaded, so the keys can be wired up
-  ;; without loading the package at startup.
-  (use-package gotest
-    :defer t
-    :init
-    (with-eval-after-load 'go-ts-mode
-      (define-key go-ts-mode-map (kbd "C-c C-t n") #'go-test-current-test)
-      (define-key go-ts-mode-map (kbd "C-c C-t f") #'go-test-current-file)
-      (define-key go-ts-mode-map (kbd "C-c C-t a") #'go-test-current-project)))
 #+end_src
+
+go-ts-mode ships its own test commands, already bound: =C-c C-t t=
+tests the function at point, =C-c C-t f= the file, =C-c C-t p= the
+package. Tune with =go-ts-mode-build-tags= and =go-ts-mode-test-flags=
+if ever needed.
 
 And to be even cooler, add it to =org-babel= with =ob-go=
 #+begin_src elisp
@@ -1184,11 +1130,6 @@ environments or system configurations.
 
 #+begin_src elisp
   (use-package nix-mode)
-#+end_src
-** Varnish Configuration Language
-VCL is a DSL for Varnish. Used mainly with Reverb to update their fastly configs.
-#+begin_src elisp
-  ;; (use-package vcl-mode)
 #+end_src
 ** Groovy
 Man, sometimes you want to write java but without all the icky boilerplate. I encounter this when it is used with jenkins.
@@ -1258,7 +1199,7 @@ so candidates replace it cleanly.
   using it for over a year and want to deepen my investment in org
   mode and org roam.
 ** Org
-   Emacs 30 bundles Org 9.7, which is plenty new — use the built-in
+   Emacs 31 bundles Org 9.8, which is plenty new — use the built-in
    (=:ensure nil=) rather than installing a newer one.
 
    #+begin_src elisp :noweb yes :no-export yes
@@ -1386,8 +1327,6 @@ project notes. That's [[https://www.orgroam.com/][org-roam]].
 
 #+begin_src elisp
   (use-package org-roam
-    :preface
-    (setq org-roam-v2-ack t)
     :custom
     (org-roam-directory (file-truename "~/Documents/org/roam"))
     (org-roam-index-file "~/Documents/org/roam/index.org")
@@ -1406,7 +1345,7 @@ One thing I've noticed with using =org-roam-dailies= is that I create a bunch of
 
 Therefore I happened upon [[https://github.com/bastibe/org-journal][org-journal]], which seems to do exactly what I want.
 
-I will configure org-journal to place my journals in =~/org/journal=, and use a yearly file format. It also owns =C-c c= — the org-capture binding it replaces is gone.
+I will configure org-journal to place my journals in =~/org/journal=, and use a yearly file format. It owns =C-c c=.
 #+begin_src elisp :noweb yes :no-export yes
   (use-package org-journal
     :demand t
