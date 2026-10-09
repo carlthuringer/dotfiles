@@ -807,12 +807,11 @@ Yes, the evil AI is even in my emacs configuration.
     ;; Private variable: wipes gptel's default backends so only the ones
     ;; defined below exist. May break on gptel upgrades — check here first.
     (setq gptel--known-backends nil)
-    (setq gptel-backend (gptel-make-gh-copilot "Copilot"))
-    (gptel-make-anthropic "Claude" :key (gptel-api-key-from-auth-source "api.anthropic.com"))
+    (setq gptel-backend (gptel-make-anthropic "Claude" :key (gptel-api-key-from-auth-source "api.anthropic.com")))
+    (setq gptel-model 'claude-opus-5-5)
     (when (file-exists-p "~/.config/emacs/gptel-tools.el")
       (load "~/.config/emacs/gptel-tools.el"))
-    :custom
-    (gptel-model 'claude-sonnet-4.6))
+    (require 'gptel-integrations))
 #+end_src
 
 #+begin_src elisp
@@ -833,6 +832,16 @@ You can use Emacs’ built-in support for authinfo to store API keys required by
 machine api.openai.com login apikey password sk-secret-openai-api-key-goes-here
 machine api.anthropic.com login apikey password sk-secret-anthropic-api-key-goes-here
 #+end_quote
+
+
+** [[https://github.com/lizqwerscott/mcp.el][MCP.el]]
+#+begin_src elisp
+  (use-package mcp
+    :ensure t
+    :custom (mcp-hub-servers
+             `(("atlassian" . (:command "npx" :args ("-y" "mcp-remote" "https://mcp.atlassian.com/v2/mcp")))))
+    :config (require 'mcp-hub))
+#+end_src
 
 * Programming
   :PROPERTIES:
