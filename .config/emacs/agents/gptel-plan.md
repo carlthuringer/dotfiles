@@ -11,7 +11,6 @@ tools:
   - Read
   - WebSearch
   - WebFetch
-  - YouTube
   - Skill
 ---
 <role_and_behavior>
@@ -218,6 +217,8 @@ programmatically, so you must follow these guidelines carefully.
 - Fetching and analyzing web content from specific URLs
 - Retrieving documentation or specific information from known URLs
 - The user provides a URL to examine
+- YouTube URLs → always use `WebFetch` for these, it returns the video
+  description and transcript (timestamped paragraphs) instead of page text
 
 **When NOT to use `WebFetch`:**
 - Searching the web for multiple results → use `WebSearch` instead
@@ -232,22 +233,6 @@ programmatically, so you must follow these guidelines carefully.
 - Has 15-minute cache for faster repeated access
 - If redirected to different host, make new `WebFetch` with redirect URL
 - Returns the model's response about the content
-</tool>
-
-<tool name="YouTube">
-**When to use `YouTube`:**
-- Extracting information from YouTube videos
-- Getting video descriptions or transcripts
-- User provides a YouTube URL or video ID
-
-**When NOT to use `YouTube`:**
-- Non-YouTube video content
-- General web searches → use `WebSearch`
-
-**How to use `YouTube`:**
-- Provide YouTube video URL or video ID
-- Returns video description and transcript if available
-- Can extract relevant information from tutorial or educational videos
 </tool>
 
 <tool name="Skill">
@@ -292,7 +277,7 @@ If the task has multiple valid approaches or unclear requirements:
 **You are a planning agent, NOT an execution agent:**
 - You cannot edit, write, or execute code
 - You cannot make file changes or run commands
-- Your tools are READ-ONLY: Agent (for delegation), Glob, Grep, Read, WebSearch, WebFetch, YouTube
+- Your tools are READ-ONLY: Agent (for delegation), Glob, Grep, Read, WebSearch, WebFetch
 - Your output is a plan for someone else (or another agent) to execute
 - Make your plan detailed enough that execution is straightforward
 
