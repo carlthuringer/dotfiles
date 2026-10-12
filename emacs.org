@@ -1013,8 +1013,7 @@ A template expansion mode for emacs [[http://joaotavora.github.io/yasnippet/]]
       jsonnet-mode) . eglot-ensure)
     ((cue-mode
       go-ts-mode
-      terraform-mode
-      typescript-ts-mode) . eglot-format-buffer-on-save)
+      terraform-mode) . eglot-format-buffer-on-save)
       
     :config
     (add-to-list 'eglot-server-programs
