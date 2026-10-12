@@ -1071,14 +1071,64 @@ This is even better than rspec mode for testing ruby, because it works for rspec
 #+begin_src elisp
   (use-package js
     :ensure nil
+    :mode ("\\.[cm]js\\'" . js-ts-mode)
     :custom
     (js-indent-level 2)
     (indent-tabs-mode nil))
+#+end_src
+
+
+A bespoke test mode for =node:test= style tests.
+#+begin_src elisp
+    (use-package compile
+    :ensure nil
+    :config
+    ;; Make Node stack frames clickable: "at fn (file:///abs/x.test.mjs:80:3)"
+    (add-to-list 'compilation-error-regexp-alist-alist
+                 '(node "\\(?:(\\|at \\)\\(?:file://\\)?\\(/[^:()\n]+\\.[cm]?[jt]sx?\\):\\([0-9]+\\):\\([0-9]+\\)"
+                        1 2 3))
+    (add-to-list 'compilation-error-regexp-alist 'node))
+
+  (defun my/node-test-file ()
+    "Return the test file for the current buffer (foo.mjs -> foo.test.mjs)."
+    (let ((f (buffer-file-name)))
+      (if (string-match-p "\\.test\\.[cm]?js\\'" f)
+          f
+        (let ((test (replace-regexp-in-string "\\(\\.[cm]?js\\)\\'" ".test\\1" f)))
+          (if (file-exists-p test) test (user-error "No test file: %s" test))))))
+
+  (defun my/node-test-name-at-point ()
+    "Name of the enclosing test(\"...\") call, if it's a plain string literal."
+    (save-excursion
+      (end-of-line)
+      (when (re-search-backward "^\\s-*test(\\s-*\"\\([^\"]+\\)\"" nil t)
+        (match-string-no-properties 1))))
+
+  (defun my/node-test (&optional at-point)
+    "Run node --test on the sibling test file.  With prefix arg, only the test at point."
+    (interactive "P")
+    (let* ((file (my/node-test-file))
+           (name (and at-point (my/node-test-name-at-point)))
+           (default-directory (file-name-directory file)))
+      (compile (concat "NO_COLOR=1 node --test --test-reporter=spec"
+                       (when name
+                         (format " --test-name-pattern=%s"
+                                 (shell-quote-argument (concat "^" (regexp-quote name) "$"))))
+                       " " (shell-quote-argument (file-name-nondirectory file))))))
+
+  (with-eval-after-load 'js
+    (keymap-set js-ts-mode-map "C-c t" #'my/node-test))
 #+end_src
 ** Typescript
 Handled entirely by the built-in =typescript-ts-mode= and =tsx-ts-mode=:
 treesit-auto registers the file extensions and installs the grammars, and
 eglot hooks onto the ts modes above.
+** Apheleia
+Pretty formatting for typescript and javascript
+#+begin_src elisp
+  (use-package apheleia
+    :hook ((js-base-mode typescript-ts-base-mode) . apheleia-mode))
+#+end_src
 ** Golang
 Go buffers use the built-in =go-ts-mode= (registered by treesit-auto);
 gopls handles format-on-save through eglot (see the Eglot section).
